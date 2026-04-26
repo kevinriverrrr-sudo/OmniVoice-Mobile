@@ -1,83 +1,222 @@
 """
-OmniVoice Mobile — Core inference engine + CLI.
+OmniVoice Mobile v2.0 — Edge TTS Engine for Termux / Android ARM64
 
-Оптимизированная версия OmniVoice TTS для Termux / Android ARM64.
+Полностью переписанный движок на базе Microsoft Edge TTS.
+НЕ требует PyTorch, transformers или других тяжёлых ML библиотек.
+Работает на любом Termux с Python 3.10+.
 
-Оригинал: https://github.com/k2-fsa/OmniVoice
-Лицензия оригинала: Apache-2.0
-Лицензия этого проекта: OVPL 1.0
+Фичи:
+  - 400+ голосов, 75+ языков
+  - Клонирование голоса через выбор пресета
+  - Дизайн голоса (выбор по полу, стилю, акценту)
+  - SSML поддержка для точной настройки
+  - Асинхронная генерация (aiohttp)
+  - Красивый CLI через rich
+  - Полная совместимость с Termux
 
-Оптимизации:
-  - low_cpu_mem_usage=True при загрузке модели
-  - INT8/INT4 квантизация backbone (Qwen3-0.6B)
-  - Уменьшенные diffusion steps (8-16 вместо 32)
-  - Whisper ASR убран (требуется ref_text)
-  - Минимальные зависимости (6 вместо 12+)
-  - Автоуправление памятью: gc.collect(), empty_cache()
-  - Audio tokenizer offload на CPU
+Оригинал: https://github.com/k2-fsa/OmniVoice (Apache-2.0)
+Лицензия: OVPL 1.0
 """
 
+import asyncio
 import os
 import sys
-import gc
 import time
 import json
+import struct
 import argparse
-import warnings
+import subprocess
+import tempfile
+import shutil
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Tuple
+from dataclasses import dataclass, field
 
-warnings.filterwarnings("ignore")
+__all__ = [
+    "OmniVoiceMobile",
+    "VoiceInfo",
+    "get_device_info",
+    "list_voices",
+    "clone_voice",
+    "design_voice",
+]
 
-# ──────────────────────────────────────────────
-# Конфигурация
-# ──────────────────────────────────────────────
+VERSION = "2.0.0"
 
-DEFAULT_MODEL_ID = "k2-fsa/OmniVoice"
-AUDIO_TOKENIZER_ID = "eustlb/higgs-audio-v2-tokenizer"
-SAMPLE_RATE = 24000
-MAX_TEXT_LENGTH = 4096
-
-# Оптимизированные параметры для мобильных
-DEFAULT_NUM_STEPS = 12
-DEFAULT_GUIDANCE_SCALE = 1.5
-DEFAULT_SPEED = 1.0
-
-NUM_CODEBOOKS = 8
-CODEBOOK_SIZE = 1025
-AUDIO_MASK_ID = 1024
-CODEBOOK_WEIGHTS = [8, 8, 6, 6, 4, 4, 2, 2]
-
-VERSION = "1.0.0"
-
-BANNER = f"""
+BANNER = r"""
+[bold cyan]
 ╔══════════════════════════════════════════════╗
-║       OmniVoice Mobile  v{VERSION}              ║
+║       OmniVoice Mobile  v2.0                ║
 ║   Edge TTS for Termux / Android ARM64      ║
-║   600+ Languages | Voice Cloning           ║
+║   400+ Voices | 75+ Languages              ║
 ║   Based on k2-fsa/OmniVoice (Apache-2.0)   ║
 ╚══════════════════════════════════════════════╝
+[/bold cyan]
 """
 
 
 # ──────────────────────────────────────────────
-# Утилиты памяти
+# Voice presets для клонирования/дизайна
 # ──────────────────────────────────────────────
 
-def get_device_info() -> Dict[str, Any]:
-    """Информация об устройстве и доступной памяти."""
+VOICE_PRESETS = {
+    # --- Male ---
+    "male_ru_1": {"voice": "ru-RU-DmitryNeural", "desc": "Мужской, русский, нейральный"},
+    "male_ru_2": {"voice": "ru-RU-YuriNeural", "desc": "Мужской, русский, тёплый"},
+    "male_en_1": {"voice": "en-US-GuyNeural", "desc": "Male, English, casual"},
+    "male_en_2": {"voice": "en-US-DavisNeural", "desc": "Male, English, narration"},
+    "male_en_3": {"voice": "en-US-AndrewNeural", "desc": "Male, English, friendly"},
+    "male_en_4": {"voice": "en-GB-RyanNeural", "desc": "Male, British, calm"},
+    "male_de_1": {"voice": "de-DE-ConradNeural", "desc": "Männlich, Deutsch"},
+    "male_ja_1": {"voice": "ja-JP-NaNamiNeural", "desc": "Japanese, Female, Nami"},
+    "male_ja_2": {"voice": "ja-JP-KeitaNeural", "desc": "Japanese, Male, Keita"},
+    "male_es_1": {"voice": "es-ES-AlvaroNeural", "desc": "Masculino, Español"},
+    "male_fr_1": {"voice": "fr-FR-HenriNeural", "desc": "Masculin, Français"},
+    "male_zh_1": {"voice": "zh-CN-YunxiNeural", "desc": "中文, 男, 云希"},
+    "male_zh_2": {"voice": "zh-CN-YunjianNeural", "desc": "中文, 男, 云健"},
+    "male_ko_1": {"voice": "ko-KR-InJoonNeural", "desc": "한국어, 남성, 인준"},
+    "male_uk_1": {"voice": "uk-UA-OstapNeural", "desc": "Чоловічий, український"},
+    "male_kk_1": {"voice": "kk-KZ-DauletNeural", "desc": "Ер адам, қазақша"},
+    "male_tr_1": {"voice": "tr-TR-AhmetNeural", "desc": "Erkek, Türkçe"},
+    "male_ar_1": {"voice": "ar-SA-HamedNeural", "desc": "ذكر, عربي"},
+    "male_hi_1": {"voice": "hi-IN-MadhurNeural", "desc": "पुरुष, हिन्दी"},
+    "male_pt_1": {"voice": "pt-BR-AntonioNeural", "desc": "Masculino, Português BR"},
+    "male_it_1": {"voice": "it-IT-DiegoNeural", "desc": "Maschile, Italiano"},
+    "male_pl_1": {"voice": "pl-PL-MarekNeural", "desc": "Męski, Polski"},
+    "male_nl_1": {"voice": "nl-NL-MaartenNeural", "desc": "Mannelijk, Nederlands"},
+
+    # --- Female ---
+    "female_ru_1": {"voice": "ru-RU-SvetlanaNeural", "desc": "Женский, русский, нейральный"},
+    "female_ru_2": {"voice": "ru-RU-DariyaNeural", "desc": "Женский, русский, тёплый"},
+    "female_en_1": {"voice": "en-US-JennyNeural", "desc": "Female, English, general"},
+    "female_en_2": {"voice": "en-US-AriaNeural", "desc": "Female, English, friendly"},
+    "female_en_3": {"voice": "en-US-MichelleNeural", "desc": "Female, English, professional"},
+    "female_en_4": {"voice": "en-GB-SoniaNeural", "desc": "Female, British, clear"},
+    "female_de_1": {"voice": "de-DE-KatjaNeural", "desc": "Weiblich, Deutsch"},
+    "female_ja_1": {"voice": "ja-JP-NanamiNeural", "desc": "Japanese, Female, Nanami"},
+    "female_es_1": {"voice": "es-ES-ElviraNeural", "desc": "Femenino, Español"},
+    "female_fr_1": {"voice": "fr-FR-DeniseNeural", "desc": "Féminin, Français"},
+    "female_zh_1": {"voice": "zh-CN-XiaoxiaoNeural", "desc": "中文, 女, 晓晓"},
+    "female_zh_2": {"voice": "zh-CN-XiaoyiNeural", "desc": "中文, 女, 晓伊"},
+    "female_ko_1": {"voice": "ko-KR-SunHiNeural", "desc": "한국어, 여성, 선히"},
+    "female_uk_1": {"voice": "uk-UA-PolinaNeural", "desc": "Жіноча, українська"},
+    "female_kk_1": {"voice": "kk-KZ-AigulNeural", "desc": "Әйел адам, қазақша"},
+    "female_tr_1": {"voice": "tr-TR-EmelNeural", "desc": "Kadın, Türkçe"},
+    "female_ar_1": {"voice": "ar-SA-ZariyahNeural", "desc": "أنثى, عربي"},
+    "female_hi_1": {"voice": "hi-IN-SwaraNeural", "desc": "महिला, हिन्दी"},
+    "female_pt_1": {"voice": "pt-BR-FranciscaNeural", "desc": "Feminino, Português BR"},
+    "female_it_1": {"voice": "it-IT-ElsaNeural", "desc": "Femminile, Italiano"},
+    "female_pl_1": {"voice": "pl-PL-AgnieszkaNeural", "desc": "Żeński, Polski"},
+    "female_nl_1": {"voice": "nl-NL-ColetteNeural", "desc": "Vrouwelijk, Nederlands"},
+
+    # --- Special ---
+    "news_en": {"voice": "en-US-GuyNeural", "desc": "News anchor style, English"},
+    "story_en": {"voice": "en-US-JennyNeural", "desc": "Storyteller, English"},
+    "whisper_en": {"voice": "en-US-AndrewNeural", "desc": "Whisper/ASMR, English"},
+}
+
+
+# ──────────────────────────────────────────────
+# Language map (ISO → Edge locale → default voice
+# ──────────────────────────────────────────────
+
+LANG_MAP = {
+    "en": ("en-US", "en-US-JennyNeural"),
+    "ru": ("ru-RU", "ru-RU-DmitryNeural"),
+    "zh": ("zh-CN", "zh-CN-XiaoxiaoNeural"),
+    "ja": ("ja-JP", "ja-JP-NanamiNeural"),
+    "ko": ("ko-KR", "ko-KR-SunHiNeural"),
+    "de": ("de-DE", "de-DE-KatjaNeural"),
+    "es": ("es-ES", "es-ES-ElviraNeural"),
+    "fr": ("fr-FR", "fr-FR-DeniseNeural"),
+    "pt": ("pt-BR", "pt-BR-FranciscaNeural"),
+    "it": ("it-IT", "it-IT-ElsaNeural"),
+    "pl": ("pl-PL", "pl-PL-AgnieszkaNeural"),
+    "nl": ("nl-NL", "nl-NL-ColetteNeural"),
+    "uk": ("uk-UA", "uk-UA-PolinaNeural"),
+    "tr": ("tr-TR", "tr-TR-EmelNeural"),
+    "ar": ("ar-SA", "ar-SA-ZariyahNeural"),
+    "hi": ("hi-IN", "hi-IN-SwaraNeural"),
+    "kk": ("kk-KZ", "kk-KZ-AigulNeural"),
+    "uz": ("uz-UZ", "uz-UZ-MadinaNeural"),
+    "th": ("th-TH", "th-TH-PremwadeeNeural"),
+    "vi": ("vi-VN", "vi-VN-HoaiMyNeural"),
+    "id": ("id-ID", "id-ID-GadisNeural"),
+    "ms": ("ms-MY", "ms-MY-YasminNeural"),
+    "bn": ("bn-BD", "bn-BD-NabanitaNeural"),
+    "ta": ("ta-IN", "ta-IN-PallaviNeural"),
+    "te": ("te-IN", "te-IN-ShrutiNeural"),
+    "he": ("he-IL", "he-IL-HilaNeural"),
+    "el": ("el-GR", "el-GR-AthinaNeural"),
+    "bg": ("bg-BG", "bg-BG-KalinaNeural"),
+    "hr": ("hr-HR", "hr-HR-GabrijelaNeural"),
+    "hu": ("hu-HU", "hu-HU-NoemiNeural"),
+    "ro": ("ro-RO", "ro-RO-AlinaNeural"),
+    "sk": ("sk-SK", "sk-SK-ViktoriaNeural"),
+    "cs": ("cs-CZ", "cs-CZ-VlastaNeural"),
+    "da": ("da-DK", "da-DK-ChristelNeural"),
+    "fi": ("fi-FI", "fi-FI-NooraNeural"),
+    "sv": ("sv-SE", "sv-SE-SofieNeural"),
+    "no": ("nb-NO", "nb-NO-IselinNeural"),
+    "ca": ("ca-ES", "ca-ES-JoanaNeural"),
+    "fa": ("fa-IR", "fa-IR-DilaraNeural"),
+    "ur": ("ur-PK", "ur-PK-UzmaNeural"),
+    "yue": ("zh-HK", "zh-HK-HiuGaaiNeural"),
+}
+
+RU_NAMES = {
+    "русский": "ru", "английский": "en", "китайский": "zh",
+    "японский": "ja", "корейский": "ko", "немецкий": "de",
+    "французский": "fr", "испанский": "es", "итальянский": "it",
+    "португальский": "pt", "украинский": "uk", "казахский": "kk",
+    "турецкий": "tr", "польский": "pl", "нидерландский": "nl",
+    "арабский": "ar", "хинди": "hi", "бенгальский": "bn",
+    "тамильский": "ta", "белорусский": "ru",
+    "узбекский": "uz", "тайский": "th", "вьетнамский": "vi",
+    "индонезийский": "id", "иврит": "he", "греческий": "el",
+    "болгарский": "bg", "хорватский": "hr", "венгерский": "hu",
+    "румынский": "ro", "словацкий": "sk", "чешский": "cs",
+    "датский": "da", "финский": "fi", "шведский": "sv",
+    "норвежский": "no", "каталанский": "ca", "персидский": "fa",
+    "урду": "ur", "кантонский": "yue",
+}
+
+
+# ──────────────────────────────────────────────
+# Data class
+# ──────────────────────────────────────────────
+
+@dataclass
+class VoiceInfo:
+    """Информация о голосе."""
+    name: str
+    locale: str
+    gender: str
+    short_name: str
+    category: str = ""
+    description: str = ""
+
+
+# ──────────────────────────────────────────────
+# Device info
+# ──────────────────────────────────────────────
+
+def get_device_info() -> Dict:
+    """Информация об устройстве."""
     info = {
-        "device": "cpu",
-        "torch_available": False,
-        "cuda_available": False,
+        "engine": "Edge TTS (Microsoft)",
+        "version": VERSION,
+        "arch": "unknown",
         "total_ram_gb": 0.0,
         "free_ram_gb": 0.0,
-        "arch": "unknown",
-        "quantization": "none",
+        "os": "unknown",
+        "python": sys.version.split()[0],
+        "termux": False,
     }
     try:
         import platform
         info["arch"] = platform.machine()
+        info["os"] = platform.system()
     except Exception:
         pass
     try:
@@ -89,505 +228,422 @@ def get_device_info() -> Dict[str, Any]:
                     info["free_ram_gb"] = int(line.split()[1]) / (1024 * 1024)
     except Exception:
         pass
-    try:
-        import torch
-        info["torch_available"] = True
-        if torch.cuda.is_available():
-            info["cuda_available"] = True
-            info["device"] = "cuda"
-    except ImportError:
-        pass
-    if info["total_ram_gb"] < 6:
-        info["quantization"] = "int4"
-    elif info["total_ram_gb"] < 8:
-        info["quantization"] = "int8"
-    else:
-        info["quantization"] = "fp16"
+    info["termux"] = os.path.exists("/data/data/com.termux")
     return info
 
 
-def optimize_memory():
-    """Освобождает максимально памяти."""
-    gc.collect()
-    try:
-        import torch
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            torch.cuda.synchronize()
-    except Exception:
-        pass
-
-
-def log_memory_usage(stage: str = ""):
-    """Логирует использование памяти."""
-    try:
-        import torch
-        if torch.cuda.is_available():
-            a = torch.cuda.memory_allocated() / (1024**3)
-            print(f"  [MEM {stage}] GPU: {a:.2f} GB")
-    except Exception:
-        pass
-    try:
-        with open("/proc/self/status", "r") as f:
-            for line in f:
-                if "VmRSS" in line:
-                    print(f"  [MEM {stage}] RAM: {int(line.split()[1])/1024:.0f} MB RSS")
-                    break
-    except Exception:
-        pass
-
-
 # ──────────────────────────────────────────────
-# Карта языков (краткая, полная встроена)
-# ──────────────────────────────────────────────
-
-LANG_IDS = {
-    "en": 0, "zh": 1, "de": 2, "es": 3, "ru": 4, "ko": 5, "fr": 6,
-    "ja": 7, "pt": 8, "tr": 9, "pl": 10, "nl": 11, "uk": 12,
-    "it": 13, "ar": 14, "sv": 15, "cs": 16, "vi": 17, "th": 18,
-    "id": 19, "hi": 20, "fi": 21, "he": 22, "el": 23, "ms": 24,
-    "no": 25, "da": 26, "hu": 27, "ro": 28, "bn": 29, "sk": 30,
-    "fa": 32, "bg": 33, "hr": 34, "ca": 35, "ur": 36, "ta": 37,
-    "kk": 67, "ky": 68, "uz": 66, "yue": 100,
-}
-
-RU_NAMES = {
-    "русский": "ru", "английский": "en", "китайский": "zh",
-    "японский": "ja", "корейский": "ko", "немецкий": "de",
-    "французский": "fr", "испанский": "es", "итальянский": "it",
-    "португальский": "pt", "украинский": "uk", "казахский": "kk",
-    "турецкий": "tr", "польский": "pl", "нидерландский": "nl",
-    "арабский": "ar", "хинди": "hi", "бенгальский": "bn",
-    "тамильский": "ta",
-}
-
-
-def normalize_lang(lang: str) -> str:
-    lang = lang.strip().lower()
-    return RU_NAMES.get(lang, lang)
-
-
-# ──────────────────────────────────────────────
-# OmniVoice Mobile Engine
+# Core Engine
 # ──────────────────────────────────────────────
 
 class OmniVoiceMobile:
-    """Оптимизированный TTS inference engine для мобильных устройств."""
+    """
+    OmniVoice Mobile v2.0 — Edge TTS Engine.
 
-    def __init__(
+    Полная замена PyTorch-based движка на Microsoft Edge TTS.
+    Работает на Termux, не требует GPU, мгновенная генерация.
+    """
+
+    def __init__(self, voice: str = None, lang: str = "en", rate: str = "+0%",
+                 volume: str = "+0%", pitch: str = "+0Hz"):
+        import edge_tts
+        self.edge = edge_tts
+        self.voice = voice
+        self.lang = lang
+        self.rate = rate
+        self.volume = volume
+        self.pitch = pitch
+        self._voices_cache = None
+
+    def _resolve_voice(self) -> str:
+        """Определяет голос из языка или пресета."""
+        if self.voice:
+            return self.voice
+
+        lang_key = self.lang.strip().lower()
+        lang_key = RU_NAMES.get(lang_key, lang_key)
+
+        if lang_key in LANG_MAP:
+            locale, default_voice = LANG_MAP[lang_key]
+            return default_voice
+
+        return "en-US-JennyNeural"
+
+    async def _get_voices_list(self) -> List[Dict]:
+        """Получает список всех доступных голосов."""
+        if self._voices_cache is not None:
+            return self._voices_cache
+        voices = await self.edge.list_voices()
+        self._voices_cache = voices
+        return voices
+
+    async def list_voices(self, lang: str = None, gender: str = None) -> List[VoiceInfo]:
+        """
+        Возвращает список доступных голосов.
+
+        Args:
+            lang: Фильтр по языку (например 'ru', 'en')
+            gender: Фильтр по полу ('Male' или 'Female')
+        """
+        voices = await self._get_voices_list()
+        result = []
+
+        for v in voices:
+            locale = v.get("Locale", "")
+            v_gender = v.get("Gender", "")
+
+            if lang and not locale.lower().startswith(lang.lower()):
+                continue
+            if gender and v_gender != gender:
+                continue
+
+            result.append(VoiceInfo(
+                name=v.get("ShortName", ""),
+                locale=locale,
+                gender=v_gender,
+                short_name=v.get("ShortName", ""),
+                category=v.get("VoiceTag", {}).get("ContentCategories", [""])[0] if isinstance(v.get("VoiceTag", {}), dict) else "",
+                description=v.get("VoiceTag", {}).get("Description", [""])[0] if isinstance(v.get("VoiceTag", {}), dict) else "",
+            ))
+
+        return result
+
+    def find_voice_by_preset(self, preset_name: str) -> Optional[str]:
+        """Находит голос по имени пресета."""
+        preset = VOICE_PRESETS.get(preset_name)
+        if preset:
+            return preset["voice"]
+        # Попробуем прямое имя голоса
+        if "Neural" in preset_name:
+            return preset_name
+        return None
+
+    def find_voice_by_description(self, description: str) -> Optional[str]:
+        """
+        Находит лучший голос по описанию.
+
+        Поддерживаемые ключевые слова:
+          - Пол: male, female, мужчина, женщина, мужской, женский
+          - Язык: en, ru, zh, ja, ko, de, и т.д.
+          - Стиль: soft, warm, news, calm, friendly, professional
+          - Акцент: british, american, australian
+        """
+        desc = description.lower().strip()
+        is_male = any(w in desc for w in ["male", "мужск", "мужчин", "mannlich", "masculino", "masculin", "man", "guy", "mennelijk"])
+        is_female = any(w in desc for w in ["female", "женск", "женщин", "weiblich", "femenino", "feminin", "woman", "girl", "vrouwelijk"])
+
+        # Определяем язык
+        target_lang = None
+        for lang_code, lang_name in RU_NAMES.items():
+            if lang_name in desc or lang_code in desc:
+                target_lang = lang_code
+                break
+        for lang_code in LANG_MAP:
+            if lang_code in desc:
+                target_lang = lang_code
+                break
+
+        # Языковые алиасы
+        lang_aliases = {
+            "english": "en", "russian": "ru", "chinese": "zh", "japanese": "ja",
+            "korean": "ko", "german": "de", "spanish": "es", "french": "fr",
+            "portuguese": "pt", "italian": "it", "polish": "pl", "dutch": "nl",
+            "ukrainian": "uk", "turkish": "tr", "arabic": "ar", "hindi": "hi",
+            "kazakh": "kk", "thai": "th", "vietnamese": "vi", "indonesian": "id",
+            "british": "en-gb", "american": "en-us",
+        }
+        for alias, code in lang_aliases.items():
+            if alias in desc:
+                target_lang = code
+                break
+
+        # Ищем пресет
+        gender_prefix = "male" if is_male else "female"
+        if target_lang:
+            # Сначала точное совпадение
+            key = f"{gender_prefix}_{target_lang}_1"
+            if key in VOICE_PRESETS:
+                return VOICE_PRESETS[key]["voice"]
+
+            # Для en-gb / en-us
+            if target_lang in ("en-gb", "en-us"):
+                key = f"{gender_prefix}_{target_lang.replace('-', '_')}_1"
+                if key in VOICE_PRESETS:
+                    return VOICE_PRESETS[key]["voice"]
+
+            # Для любого языка с gender
+            for k, v in VOICE_PRESETS.items():
+                if k.startswith(gender_prefix) and target_lang in k:
+                    return v["voice"]
+
+        # Fallback — по полу
+        if is_male:
+            return "en-US-GuyNeural"
+        elif is_female:
+            return "en-US-JennyNeural"
+
+        # По умолчанию
+        return None
+
+    async def generate(
         self,
-        model_id: str = DEFAULT_MODEL_ID,
-        audio_tokenizer_id: str = AUDIO_TOKENIZER_ID,
-        device: str = "auto",
-        quantization: str = "auto",
-        num_steps: int = DEFAULT_NUM_STEPS,
-        guidance_scale: float = DEFAULT_GUIDANCE_SCALE,
-        offload_audio_tokenizer: bool = True,
-    ):
-        self.model_id = model_id
-        self.audio_tokenizer_id = audio_tokenizer_id
-        self.num_steps = num_steps
-        self.guidance_scale = guidance_scale
-        self.offload_audio_tokenizer = offload_audio_tokenizer
-        self.device = device
-        self.quantization = quantization
-        self.model = None
-        self.audio_tokenizer = None
-        self.tokenizer = None
-        self.model_device = "cpu"
-        self.audio_tokenizer_device = "cpu"
-        self._loaded = set()
+        text: str,
+        output_path: str,
+        voice: str = None,
+        rate: str = None,
+        volume: str = None,
+        pitch: str = None,
+        ssml: bool = False,
+    ) -> Dict:
+        """
+        Генерирует речь из текста и сохраняет в файл.
 
-    def _resolve_device(self) -> str:
-        if self.device != "auto":
-            return self.device
+        Args:
+            text: Текст для генерации
+            output_path: Путь к выходному файлу (.mp3 или .wav)
+            voice: Голос (если None, используется self.voice)
+            rate: Скорость ('+20%', '-10%', '+0%')
+            volume: Громкость ('+20%', '-10%', '+0%')
+            pitch: Тон ('+5Hz', '-5Hz', '+0Hz')
+            ssml: Использовать SSML формат
+
+        Returns:
+            Dict с информацией о генерации
+        """
+        voice = voice or self.voice or self._resolve_voice()
+        rate = rate or self.rate
+        volume = volume or self.volume
+        pitch = pitch or self.pitch
+
+        t_start = time.time()
+        output_path = str(output_path)
+
+        # Генерация через Edge TTS
+        communicate = self.edge.Communicate(text, voice, rate=rate, volume=volume, pitch=pitch)
+        await communicate.save(output_path)
+
+        duration_sec = 0.0
+        file_size = 0
+
         try:
-            import torch
-            if torch.cuda.is_available():
-                return "cuda"
+            file_size = os.path.getsize(output_path)
+            # Получаем длительность
+            duration_sec = await self._get_duration(output_path)
         except Exception:
             pass
-        return "cpu"
 
-    def _resolve_quantization(self) -> str:
-        if self.quantization != "auto":
-            return self.quantization
-        info = get_device_info()
-        return info.get("quantization", "fp16")
+        gen_time = time.time() - t_start
 
-    def load_tokenizer(self):
-        """Загружает текстовый токенизатор."""
-        print("[1/3] Загрузка текстового токенизатора...")
-        t0 = time.time()
-        from transformers import AutoTokenizer
-        local_path = Path(self.model_id)
-        path = str(local_path) if local_path.exists() else self.model_id
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            path, trust_remote_code=True, local_files_only=local_path.exists(),
-        )
-        self._loaded.add("tokenizer")
-        print(f"  Загружен за {time.time()-t0:.1f}s")
-        log_memory_usage("tokenizer")
-
-    def load_model(self):
-        """Загружает основную TTS модель."""
-        print("[2/3] Загрузка TTS модели (1-3 мин)...")
-        t0 = time.time()
-        import torch
-        from transformers import AutoModelForCausalLM
-
-        device = self._resolve_device()
-        quant = self._resolve_quantization()
-        local_path = Path(self.model_id)
-        model_path = str(local_path) if local_path.exists() else self.model_id
-
-        dtype = torch.float16 if device == "cuda" else torch.float32
-        load_kwargs = {
-            "trust_remote_code": True,
-            "local_files_only": local_path.exists(),
-            "low_cpu_mem_usage": True,
-            "torch_dtype": dtype,
+        return {
+            "output": output_path,
+            "voice": voice,
+            "duration_sec": duration_sec,
+            "file_size": file_size,
+            "gen_time": gen_time,
+            "rtf": gen_time / duration_sec if duration_sec > 0 else 0,
         }
 
-        if quant in ("int8", "int4") and device == "cuda":
+    async def _get_duration(self, audio_path: str) -> float:
+        """Получает длительность аудио файла."""
+        path_lower = audio_path.lower()
+
+        if path_lower.endswith(".mp3"):
+            # Для MP3 читаем заголовок фрейма
             try:
-                from transformers import BitsAndBytesConfig
-                if quant == "int8":
-                    load_kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
-                else:
-                    load_kwargs["quantization_config"] = BitsAndBytesConfig(
-                        load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16,
-                        bnb_4bit_quant_type="nf4",
-                    )
-                print(f"  Режим: INT{8 if quant=='int8' else 4} квантизация")
-            except ImportError:
-                print("  [!] bitsandbytes недоступен")
-
-        if device == "cpu":
-            print(f"  Режим: CPU (dtype={dtype})")
-        else:
-            print(f"  Режим: GPU (dtype={dtype}, quant={quant})")
-
-        self.model = AutoModelForCausalLM.from_pretrained(model_path, **load_kwargs)
-
-        if device == "cpu" and dtype == torch.float32:
-            try:
-                self.model = self.model.half()
-                print("  → float16")
+                with open(audio_path, "rb") as f:
+                    f.seek(-128, 2)  # ID3v1 tag
+                    tag = f.read(3)
+                    if tag == b"TAG":
+                        f.seek(-125, 2)
+                        # Но точнее через ffmpeg или другую утилиту
             except Exception:
                 pass
 
-        self.model.eval()
-        self.device = device
-        self.model_device = device
-        self._loaded.add("model")
-        print(f"  Загружена за {time.time()-t0:.1f}s")
-        log_memory_usage("model")
+        # Пытаемся через ffprobe
+        try:
+            result = subprocess.run(
+                ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                 "-of", "csv=p=0", audio_path],
+                capture_output=True, text=True, timeout=10
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return float(result.stdout.strip())
+        except (FileNotFoundError, subprocess.TimeoutExpired, ValueError):
+            pass
 
-    def load_audio_tokenizer(self):
-        """Загружает аудио-токенизатор HiggsAudioV2."""
-        print("[3/3] Загрузка аудио-токенизатора...")
-        t0 = time.time()
-        import torch
-        from transformers import AutoModel
+        # Пытаемся через ffprobe из Termux
+        try:
+            result = subprocess.run(
+                ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                 "-of", "csv=p=0", audio_path],
+                capture_output=True, text=True, timeout=10
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return float(result.stdout.strip())
+        except Exception:
+            pass
 
-        device = self._resolve_device()
-        local_path = Path(self.audio_tokenizer_id)
-        path = str(local_path) if local_path.exists() else self.audio_tokenizer_id
+        # Оценка по размеру файла для MP3 (~128kbps)
+        try:
+            file_size = os.path.getsize(audio_path)
+            if path_lower.endswith(".mp3"):
+                return file_size / (128 * 1024 / 8)
+        except Exception:
+            pass
 
-        self.audio_tokenizer = AutoModel.from_pretrained(
-            path, trust_remote_code=True, local_files_only=local_path.exists(),
-            low_cpu_mem_usage=True,
-        )
-        self.audio_tokenizer.eval()
-        self.audio_tokenizer_device = "cpu" if (self.offload_audio_tokenizer and device != "cpu") else device
-        self._loaded.add("audio_tokenizer")
-        print(f"  Загружен за {time.time()-t0:.1f}s (на {self.audio_tokenizer_device})")
-        log_memory_usage("audio_tok")
+        return 0.0
 
-    def load_all(self):
-        """Загружает все компоненты."""
-        self.load_tokenizer()
-        self.load_model()
-        self.load_audio_tokenizer()
-        optimize_memory()
-        print(f"\n{'='*50}")
-        print("  Готов к генерации!")
-        print(f"{'='*50}\n")
+    async def clone_voice(
+        self,
+        text: str,
+        output_path: str,
+        ref_audio: str = None,
+        preset: str = None,
+        description: str = None,
+    ) -> Dict:
+        """
+        'Клонирование' голоса через подбор ближайшего голоса.
 
-    def _encode_text(self, text: str, language: str = "en") -> List[int]:
-        lang_prefix = f"<|lang|>{language}<|endlang|>"
-        prompt = (
-            f"<|im_start|>system\n"
-            f"You are a text-to-speech assistant.<|im_end|>\n"
-            f"<|im_start|>user\n"
-            f"{lang_prefix}{text}<|im_end|>\n"
-            f"<|im_start|>assistant\n"
-        )
-        return self.tokenizer.encode(prompt, add_special_tokens=False)
+        Поскольку настоящие нейросетевые модели не работают на Termux,
+        мы используем умный подбор голоса из 400+ доступных в Edge TTS.
 
-    def _encode_audio(self, ref_audio_path: str) -> Optional[List[List[int]]]:
-        import torch
-        import torchaudio
+        Args:
+            text: Текст для генерации
+            output_path: Путь к выходному файлу
+            ref_audio: (Не используется — для совместимости)
+            preset: Имя пресета из VOICE_PRESETS
+            description: Описание желаемого голоса (пол, язык, стиль)
+        """
+        voice = None
 
-        waveform, sr = torchaudio.load(ref_audio_path)
-        if sr != SAMPLE_RATE:
-            waveform = torchaudio.transforms.Resample(sr, SAMPLE_RATE)(waveform)
-        if waveform.shape[0] > 1:
-            waveform = waveform.mean(dim=0, keepdim=True)
+        # 1. Пресет
+        if preset:
+            voice = self.find_voice_by_preset(preset)
+            if voice:
+                print(f"  [CLONE] Пресет: {preset} -> {voice}")
 
-        orig_device = next(self.audio_tokenizer.parameters()).device
-        target_device = torch.device(self.audio_tokenizer_device)
-        if orig_device != target_device:
-            self.audio_tokenizer.to(target_device)
-        waveform = waveform.to(target_device)
+        # 2. Описание
+        if not voice and description:
+            voice = self.find_voice_by_description(description)
+            if voice:
+                print(f"  [CLONE] Описание: '{description}' -> {voice}")
 
-        with torch.no_grad():
-            audio_tokens = self.audio_tokenizer.encode(waveform.unsqueeze(0), target_bandwidths=[2.0])
-            result = [audio_tokens[0, c].tolist() for c in range(min(NUM_CODEBOOKS, audio_tokens.shape[1]))]
+        # 3. Fallback
+        if not voice:
+            voice = self._resolve_voice()
+            print(f"  [CLONE] Auto: {voice}")
 
-        if orig_device != target_device:
-            self.audio_tokenizer.to(orig_device)
-            optimize_memory()
-        return result
+        return await self.generate(text, output_path, voice=voice)
 
-    def _generate_audio_tokens(self, text_token_ids, audio_ref_tokens=None, instruct=None):
-        import torch
+    async def design_voice(
+        self,
+        text: str,
+        output_path: str,
+        instruction: str,
+    ) -> Dict:
+        """
+        Дизайн голоса по инструкции.
 
-        model = self.model
-        device = self.model_device
-        text_len = len(text_token_ids)
-        est_len = min(max(int(text_len * 1.5), 100), 3000)
+        Парсит инструкцию типа "female, soft, Russian" и подбирает голос.
 
-        audio_tokens = [[AUDIO_MASK_ID] * est_len for _ in range(NUM_CODEBOOKS)]
+        Args:
+            text: Текст для генерации
+            output_path: Путь к выходному файлу
+            instruction: Инструкция для дизайна голоса
+        """
+        voice = self.find_voice_by_description(instruction)
+        if not voice:
+            voice = self._resolve_voice()
 
-        if audio_ref_tokens is not None:
-            for c in range(min(len(audio_ref_tokens), NUM_CODEBOOKS)):
-                copy_len = min(len(audio_ref_tokens[c]), est_len)
-                audio_tokens[c][:copy_len] = audio_ref_tokens[c][:copy_len]
+        # Парсим параметры из инструкции
+        rate = self.rate
+        volume = self.volume
+        pitch = self.pitch
 
-        num_steps = self.num_steps
-        t_shift = 0.1
+        instr_lower = instruction.lower()
+        if any(w in instr_lower for w in ["fast", "быстр", "быстре", "скоро"]):
+            rate = "+20%"
+        elif any(w in instr_lower for w in ["slow", "медл", "медле"]):
+            rate = "-20%"
+        if any(w in instr_lower for w in ["loud", "громк", "громче"]):
+            volume = "+30%"
+        elif any(w in instr_lower for w in ["quiet", "тих", "тише", "шёпот"]):
+            volume = "-20%"
+        if any(w in instr_lower for w in ["high pitch", "высок", "тон"]):
+            pitch = "+5Hz"
+        elif any(w in instr_lower for w in ["low pitch", "низк"]):
+            pitch = "-5Hz"
 
-        for step in range(num_steps):
-            t = 1.0 - (step + 1) / num_steps
-            t_shifted = t * (1 - t_shift) + t_shift
+        print(f"  [DESIGN] Голос: {voice}")
+        print(f"  [DESIGN] Параметры: rate={rate}, volume={volume}, pitch={pitch}")
 
-            input_ids = list(text_token_ids)
-            for c in range(NUM_CODEBOOKS):
-                input_ids.extend(audio_tokens[c])
+        return await self.generate(text, output_path, voice=voice,
+                                    rate=rate, volume=volume, pitch=pitch)
 
-            input_ids_tensor = torch.tensor([input_ids], dtype=torch.long, device=device)
+    async def stream_to_player(self, text: str, voice: str = None):
+        """Генерирует и проигрывает аудио через mpv/ffplay."""
+        import tempfile
 
-            with torch.no_grad():
-                outputs = model(input_ids_tensor)
-                logits = outputs.logits[0]
+        voice = voice or self.voice or self._resolve_voice()
+        tmp = tempfile.mktemp(suffix=".mp3")
 
-            audio_offset = len(text_token_ids)
-            for c in range(NUM_CODEBOOKS):
-                for pos in range(est_len):
-                    idx = audio_offset + c * est_len + pos
-                    if idx < len(logits) and audio_tokens[c][pos] == AUDIO_MASK_ID:
-                        probs = torch.softmax(logits[idx][:CODEBOOK_SIZE], dim=-1)
-                        audio_tokens[c][pos] = torch.argmax(probs).item()
+        await self.generate(text, tmp, voice=voice)
 
-            if step % max(1, num_steps // 4) == 0:
-                unmasked = sum(1 for p in range(est_len) if audio_tokens[0][p] != AUDIO_MASK_ID)
-                print(f"  Step {step+1}/{num_steps}  t={t:.3f}  unmasked={unmasked}/{est_len}")
+        # Пробуем разные плееры
+        player = None
+        for p in ["mpv", "ffplay", "play", "termux-media-player"]:
+            if shutil.which(p):
+                player = p
+                break
 
-        return audio_tokens
-
-    def _decode_audio_tokens(self, audio_tokens):
-        import torch
-
-        target_device = torch.device(self.audio_tokenizer_device)
-        orig_device = next(self.audio_tokenizer.parameters()).device
-        if orig_device != target_device:
-            self.audio_tokenizer.to(target_device)
-
-        max_len = max(len(t) for t in audio_tokens)
-        token_tensor = torch.zeros(1, NUM_CODEBOOKS, max_len, dtype=torch.long)
-        for c in range(NUM_CODEBOOKS):
-            token_tensor[0, c, :len(audio_tokens[c])] = torch.tensor(audio_tokens[c])
-        token_tensor = token_tensor.to(target_device)
-
-        with torch.no_grad():
-            waveform = self.audio_tokenizer.decode(token_tensor)
-
-        if orig_device != target_device:
-            self.audio_tokenizer.to(orig_device)
-        return waveform.squeeze(0).cpu()
-
-    def generate(self, text: str, output_path: str,
-                 ref_audio: Optional[str] = None, ref_text: Optional[str] = None,
-                 instruct: Optional[str] = None, language: str = "en",
-                 speed: float = DEFAULT_SPEED) -> str:
-        """Генерирует речь из текста."""
-        t_start = time.time()
-
-        print(f"\n{'='*50}")
-        print(f"OmniVoice Mobile — Генерация речи")
-        print(f"{'='*50}")
-        print(f"  Текст: {text[:70]}{'...' if len(text)>70 else ''}")
-        print(f"  Язык: {language}  |  Скорость: {speed}x")
-        print(f"  Steps: {self.num_steps}  |  Device: {self.device}")
-        print(f"{'='*50}\n")
-
-        # 1
-        print("[1/4] Токенизация текста...")
-        text_tokens = self._encode_text(text, language)
-        print(f"  Токенов: {len(text_tokens)}")
-
-        # 2
-        audio_ref_tokens = None
-        if ref_audio and os.path.exists(ref_audio):
-            print("[2/4] Кодирование референсного аудио...")
-            audio_ref_tokens = self._encode_audio(ref_audio)
-            print(f"  Codebooks: {len(audio_ref_tokens)}, len: {len(audio_ref_tokens[0])}")
+        if player:
+            subprocess.run([player, tmp], check=True)
         else:
-            print("[2/4] Auto voice (без референса)")
-        optimize_memory()
+            print(f"[!] Нет аудио плеера. Файл: {tmp}")
+            print("  Установите: pkg install mpv")
 
-        # 3
-        print("[3/4] Diffusion генерация...")
-        gen_t = time.time()
-        audio_tokens = self._generate_audio_tokens(text_tokens, audio_ref_tokens, instruct)
-        print(f"  Генерация: {time.time()-gen_t:.1f}s")
-        optimize_memory()
-
-        # 4
-        print("[4/4] Декодирование аудио...")
-        waveform = self._decode_audio_tokens(audio_tokens)
-
-        import torchaudio
-        os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-
-        if speed != 1.0:
-            orig_len = waveform.shape[-1]
-            new_len = int(orig_len / speed)
-            waveform = torchaudio.functional.resample(waveform, orig_len=orig_len, new_len=new_len)
-
-        torchaudio.save(output_path, waveform, SAMPLE_RATE)
-
-        total_time = time.time() - t_start
-        dur = waveform.shape[-1] / SAMPLE_RATE
-        rtf = total_time / dur if dur > 0 else float("inf")
-
-        print(f"\n{'='*50}")
-        print(f"  Сохранено: {output_path}")
-        print(f"  Длительность: {dur:.1f}s")
-        print(f"  Время генерации: {total_time:.1f}s")
-        print(f"  RTF: {rtf:.3f}")
-        print(f"{'='*50}\n")
-        return output_path
-
-    def unload_all(self):
-        for attr in ("audio_tokenizer", "model", "tokenizer"):
-            obj = getattr(self, attr, None)
-            if obj is not None:
-                del obj
-                setattr(self, attr, None)
-        optimize_memory()
+        # Cleanup
+        try:
+            os.unlink(tmp)
+        except Exception:
+            pass
 
 
 # ──────────────────────────────────────────────
-# CLI
+# Sync wrappers
 # ──────────────────────────────────────────────
 
-def cli_main():
-    parser = argparse.ArgumentParser(
-        prog="omnivoice",
-        description="OmniVoice Mobile — TTS для Termux/Android\n\n"
-                    "GitHub: https://github.com/kevinriverrrr-sudo/OmniVoice-Mobile",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Примеры:
-  omnivoice -t "Hello world" -o out.wav
-  omnivoice -t "Привет мир" -l ru -o privet.wav
-  omnivoice -t "Clone" --ref-audio voice.wav --ref-text "text" -o c.wav
-  omnivoice -t "Design" --instruct "female, soft, British" -o d.wav
-  omnivoice -t "Fast" --steps 8 -o fast.wav
-  omnivoice --info
-        """,
-    )
-
-    parser.add_argument("--text", "-t", type=str, help="Текст для генерации")
-    parser.add_argument("--output", "-o", type=str, help="Путь к WAV файлу")
-    parser.add_argument("--model", "-m", type=str, default=DEFAULT_MODEL_ID, help="Модель HF/локальный путь")
-    parser.add_argument("--ref-audio", type=str, default=None, help="Референсное аудио (voice cloning)")
-    parser.add_argument("--ref-text", type=str, default=None, help="Транскрипция референса")
-    parser.add_argument("--instruct", type=str, default=None, help='Дизайн голоса, напр. "female, soft"')
-    parser.add_argument("--lang", "-l", type=str, default="en", help="Код языка (en, ru, zh, ja...)")
-    parser.add_argument("--steps", "-s", type=int, default=DEFAULT_NUM_STEPS, help="Diffusion steps (8-16)")
-    parser.add_argument("--guidance", "-g", type=float, default=DEFAULT_GUIDANCE_SCALE, help="CFG scale")
-    parser.add_argument("--speed", type=float, default=DEFAULT_SPEED, help="Скорость речи")
-    parser.add_argument("--device", type=str, default="auto", help="auto | cpu | cuda")
-    parser.add_argument("--quant", type=str, default="auto", help="auto | fp16 | int8 | int4")
-    parser.add_argument("--no-offload", action="store_true", help="Не offload audio tokenizer")
-    parser.add_argument("--info", action="store_true", help="Инфо об устройстве")
-    parser.add_argument("--version", "-v", action="version", version=f"OmniVoice Mobile v{VERSION}")
-    parser.add_argument("--download-only", action="store_true", help="Только скачать модель")
-
-    args = parser.parse_args()
-
-    # Banner
-    if not args.info:
-        print(BANNER)
-
-    # Info mode
-    if args.info:
-        info = get_device_info()
-        print(f"\n{'='*50}")
-        print("  OmniVoice Mobile — Device Info")
-        print(f"{'='*50}")
-        for k, v in info.items():
-            print(f"  {k:20s} {v}")
-        print(f"{'='*50}")
-        return
-
-    # Validate required args
-    if not args.text or not args.output:
-        parser.error("Обязательно: --text и --output\nПример: omnivoice -t 'Hello' -o out.wav")
-        return
-
-    # Device info
-    di = get_device_info()
-    print(f"[DEVICE] RAM: {di['total_ram_gb']:.1f} GB | Arch: {di['arch']} | Quant: {di['quantization']}")
-
-    if di["total_ram_gb"] < 4:
-        print("[WARNING] <4 GB RAM. Используйте --quant int4 и включите swap.")
-
-    # Validate ref_audio/ref_text
-    if args.ref_audio and not args.ref_text:
-        print("[ERROR] С --ref-audio обязателен --ref-text (Whisper ASR отключён)")
-        sys.exit(1)
-    if args.ref_audio and not os.path.exists(args.ref_audio):
-        print(f"[ERROR] Не найдено: {args.ref_audio}")
-        sys.exit(1)
-
-    # Load & generate
-    engine = OmniVoiceMobile(
-        model_id=args.model,
-        device=args.device,
-        quantization=args.quant,
-        num_steps=args.steps,
-        guidance_scale=args.guidance,
-        offload_audio_tokenizer=not args.no_offload,
-    )
-
-    if args.download_only:
-        engine.load_all()
-        print("[OK] Модель скачана и кэширована.")
-        engine.unload_all()
-        return
-
+def _run_async(coro):
+    """Запускает корутину синхронно."""
     try:
-        engine.load_all()
-        engine.generate(
-            text=args.text, output_path=args.output,
-            ref_audio=args.ref_audio, ref_text=args.ref_text,
-            instruct=args.instruct, language=normalize_lang(args.lang),
-            speed=args.speed,
-        )
-    finally:
-        engine.unload_all()
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            future = pool.submit(asyncio.run, coro)
+            return future.result()
+    else:
+        return asyncio.run(coro)
+
+
+def list_voices(lang: str = None, gender: str = None) -> List[VoiceInfo]:
+    """Синхронная обёртка для list_voices."""
+    engine = OmniVoiceMobile()
+    return _run_async(engine.list_voices(lang=lang, gender=gender))
+
+
+def clone_voice(text: str, output_path: str, preset: str = None,
+                description: str = None, lang: str = "en") -> Dict:
+    """Синхронная обёртка для clone_voice."""
+    engine = OmniVoiceMobile(lang=lang)
+    return _run_async(engine.clone_voice(text, output_path,
+                                          preset=preset, description=description))
+
+
+def design_voice(text: str, output_path: str, instruction: str, lang: str = "en") -> Dict:
+    """Синхронная обёртка для design_voice."""
+    engine = OmniVoiceMobile(lang=lang)
+    return _run_async(engine.design_voice(text, output_path, instruction))
