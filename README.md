@@ -203,45 +203,72 @@ OmniVoice Mobile (INT4, 4 GB RAM device):
 
 ## ⚡ Быстрый старт
 
-### 1. Установка Termux
+> ⚠️ **Termux ТОЛЬКО с F-Droid!** Google Play версия устарела.
 
-> ⚠️ **ТОЛЬКО с F-Droid!** Версия с Google Play устарела и не поддерживается.
+### 🚀 Одна команда — установка и готово
 
 ```bash
-# Скачайте Termux с https://f-droid.org/packages/com.termux/
-# или через F-Droid приложение
+curl -fsSL https://raw.githubusercontent.com/kevinriverrrr-sudo/OmniVoice-Mobile/main/scripts/bootstrap.sh | bash
 ```
 
-### 2. Автоматическая установка
+Это автоматически:
+1. Обновит Termux
+2. Установит системные зависимости
+3. Включит swap если RAM < 6 GB
+4. Установит OmniVoice Mobile через pip
+5. Создаст команду `omnivoice`
+
+---
+
+### Альтернативные способы установки
+
+<details>
+<summary><b>pip install (если Termux уже настроен)</b></summary>
 
 ```bash
-# Распакуйте проект
-cd ~/OmniVoice-Mobile
-
-# Запустите установщик (всё сделает автоматически)
-bash scripts/install_termux.sh
+pip install git+https://github.com/kevinriverrrr-sudo/OmniVoice-Mobile.git
 ```
 
-### 3. Первая генерация
+</details>
+
+<details>
+<summary><b>git clone (для разработки)</b></summary>
 
 ```bash
-# Проверка устройства
-python src/omnivoice_mobile.py --info
+git clone https://github.com/kevinriverrrr-sudo/OmniVoice-Mobile.git
+cd OmniVoice-Mobile
+pip install -e .
+```
 
-# Генерация (первый запуск скачает модель ~3GB)
-python src/omnivoice_mobile.py \
-    --text "Hello World! This is OmniVoice Mobile." \
-    --output hello.wav
+</details>
+
+### Генерация речи (после установки)
+
+```bash
+# Инфо об устройстве
+omnivoice --info
+
+# Генерация (первый раз скачает модель ~3GB)
+omnivoice -t "Hello World! This is OmniVoice Mobile." -o hello.wav
+
+# На русском
+omnivoice -t "Привет мир! Это OmniVoice Mobile." -l ru -o privet.wav
+
+# Клонирование голоса
+omnivoice -t "Привет" --ref-audio voice.wav --ref-text "Мой голос" -l ru -o clone.wav
+
+# Дизайн голоса
+omnivoice -t "Hello" --instruct "female, soft, British accent" -o designed.wav
 ```
 
 <div align="center">
 
 ```mermaid
 graph TD
-    A["📲 Установить Termux<br/>(F-Droid)"] --> B["📦 Распаковать<br/>OmniVoice-Mobile"]
-    B --> C["🔧 Запустить<br/>install_termux.sh"]
-    C --> D["⬇️ Скачать модель<br/>(~3 GB, первый раз)"]
-    D --> E["🎙️ Генерировать<br/>речь!"]
+    A["📲 Termux<br/>(F-Droid)"] --> B["one command:<br/>curl | bash"]
+    B --> C["omnivoice<br/>установлен!"]
+    C --> D["omnivoice -t 'Hello' -o out.wav"]
+    D --> E["out.wav готов!"]
     
     style A fill:#ff922b,color:#fff
     style B fill:#845ef7,color:#fff
@@ -289,127 +316,78 @@ graph TD
 
 ## 🎓 Туториалы
 
-### Tutorial 1: Базовая генерация речи
+### Tutorial 1: Базовая генерация
 
 ```bash
-# Английский
-python src/omnivoice_mobile.py -t "Hello world" -o en.wav
-
-# Русский
-python src/omnivoice_mobile.py -t "Привет мир" -l ru -o ru.wav
-
-# Китайский
-python src/omnivoice_mobile.py -t "你好世界" -l zh -o zh.wav
-
-# Японский
-python src/omnivoice_mobile.py -t "こんにちは世界" -l ja -o ja.wav
+omnivoice -t "Hello world" -o en.wav
+omnivoice -t "Привет мир" -l ru -o ru.wav
+omnivoice -t "你好世界" -l zh -o zh.wav
+omnivoice -t "こんにちは世界" -l ja -o ja.wav
 ```
 
 ### Tutorial 2: Клонирование голоса
 
 ```bash
-# 1. Запишите своё голосовое сообщение (3-10 секунд)
-# 2. Сохраните как my_voice.wav
-# 3. Напишите транскрипцию того что вы сказали
-
-python src/omnivoice_mobile.py \
-    -t "Это мой клонированный голос. Здравствуй!" \
-    --ref-audio my_voice.wav \
-    --ref-text "Привет, я записываю это для клонирования голоса" \
-    -l ru \
-    -o cloned.wav
+# Запишите голос (3-10 сек), сохраните как voice.wav
+omnivoice -t "Это мой клонированный голос" \
+  --ref-audio voice.wav --ref-text "Привет, тест" -l ru -o clone.wav
 ```
 
 ### Tutorial 3: Дизайн голоса
 
 ```bash
-# Женский голос, молодой, мягкий
-python src/omnivoice_mobile.py \
-    -t "Hello, I am a custom designed voice" \
-    --instruct "female, young, soft voice, American accent" \
-    -o female_soft.wav
-
-# Мужской голос, бас, старый
-python src/omnivoice_mobile.py \
-    -t "Good evening, welcome to the show" \
-    --instruct "male, deep voice, old, British accent" \
-    -o male_deep.wav
-
-# Детский голос
-python src/omnivoice_mobile.py \
-    -t "Mommy, can I have ice cream please?" \
-    --instruct "child, 7 years old, cheerful, American" \
-    -o child.wav
+omnivoice -t "Hello" --instruct "female, young, soft voice, British" -o soft.wav
+omnivoice -t "Welcome" --instruct "male, deep voice, old, American" -o deep.wav
+omnivoice -t "Hi!" --instruct "child, 7 years old, cheerful" -o child.wav
 ```
 
-### Tutorial 4: Оптимизация под своё устройство
+### Tutorial 4: Оптимизация под устройство
 
 ```bash
-# Быстрая генерация (8 шагов, хуже качество но быстрее)
-python src/omnivoice_mobile.py -t "Fast" --steps 8 -o fast.wav
-
-# Высокое качество (16 шагов, медленнее но лучше)
-python src/omnivoice_mobile.py -t "Quality" --steps 16 --guidance 2.0 -o hq.wav
-
-# Автоматическая квантизация по RAM
-python src/omnivoice_mobile.py -t "Auto" --quant auto -o auto.wav
-
-# Принудительная INT4 (для 4GB RAM)
-python src/omnivoice_mobile.py -t "Tiny" --quant int4 -o tiny.wav
+omnivoice -t "Fast" --steps 8 -o fast.wav        # Быстро
+omnivoice -t "Quality" --steps 16 --guidance 2.0 -o hq.wav  # Качество
+omnivoice -t "Tiny" --quant int4 -o tiny.wav     # Мало RAM
 ```
 
-### Tutorial 5: Настройка Termux для слабых устройств
+### Tutorial 5: Слабые устройства (<6 GB RAM)
 
 ```bash
-# Включить swap (обязательно для <6GB RAM)
-fallocate -l 4G ~/swapfile
-chmod 600 ~/swapfile
-mkswap ~/swapfile
-swapon ~/swapfile
-
-# Оптимальное число потоков
+fallocate -l 4G ~/swapfile && chmod 600 ~/swapfile && mkswap ~/swapfile && swapon ~/swapfile
 export OMP_NUM_THREADS=4
-export MKL_NUM_THREADS=4
-export TORCH_NUM_THREADS=4
-
-# Не давать устройству спать
 termux-wake-lock
-
-# Генерация
-python src/omnivoice_mobile.py -t "Optimized" --steps 8 --quant int4 -o out.wav
+omnivoice -t "Optimized" --steps 8 --quant int4 -o out.wav
 ```
 
 ---
 
-## 🔧 CLI Справка
+## 🔧 CLI
 
 ```
-Использование: python omnivoice_mobile.py [OPTIONS]
+omnivoice [OPTIONS]
 
 Обязательные:
   -t, --text TEXT        Текст для генерации речи
-  -o, --output PATH      Путь к выходному WAV файлу
+  -o, --output PATH      Путь к WAV файлу
 
 Модель:
   -m, --model PATH       Модель (default: k2-fsa/OmniVoice)
-      --device DEVICE    Устройство: auto|cpu|cuda (default: auto)
-      --quant LEVEL      Квантизация: auto|fp16|int8|int4 (default: auto)
+      --device            auto | cpu | cuda
+      --quant             auto | fp16 | int8 | int4
 
 Голос:
-  -l, --lang CODE        Код языка (default: en)
-      --ref-audio PATH   Референсное аудио для клонирования
-      --ref-text TEXT    Транскрипция референсного аудио
-      --instruct TEXT    Инструкция дизайна голоса
-      --speed FLOAT      Скорость речи (default: 1.0)
+  -l, --lang CODE        Код языка (en, ru, zh, ja...)
+      --ref-audio PATH   Референсное аудио
+      --ref-text TEXT    Транскрипция
+      --instruct TEXT    Дизайн голоса
+      --speed FLOAT      Скорость (default: 1.0)
 
 Качество:
-  -s, --steps INT        Diffusion steps: 8 (быстро) - 16 (качество)
+  -s, --steps INT        8 (быстро) — 16 (качество)
   -g, --guidance FLOAT   CFG scale (default: 1.5)
 
 Утилиты:
-      --info             Информация об устройстве
-      --download-only    Только скачать модель
-      --no-offload       Не offload audio tokenizer
+      --info             Инфо об устройстве
+      --version           Версия
 ```
 
 ---
@@ -446,31 +424,20 @@ python scripts/quantize_model.py --model k2-fsa/OmniVoice --bits 8 -o ./q8
 
 ```
 OmniVoice-Mobile/
+├── src/omnivoice_mobile/           # 📦 pip-пакет
+│   ├── __init__.py                # Мета, версия, экспорты
+│   ├── cli.py                     # 🚀 Точка входа (команда omnivoice)
+│   └── engine.py                  # ⭐ Inference engine + CLI логика
 │
-├── 📂 src/                          # Исходный код
-│   ├── omnivoice_mobile.py          # ⭐ Основной inference engine
-│   └── gguf_loader.py              # 📦 GGUF / llama.cpp загрузчик
+├── scripts/
+│   ├── bootstrap.sh               # 🔥 ONE-COMMAND INSTALL (curl | bash)
+│   ├── install_termux.sh          # 📱 Полная установка Termux
+│   └── quantize_model.py          # 🔧 Квантизация INT4/INT8
 │
-├── 📂 scripts/                      # Скрипты
-│   ├── install_termux.sh           # 📱 Автоустановка Termux
-│   └── quantize_model.py           # 🔧 Квантизация модели
-│
-├── 📂 utils/                        # Утилиты
-│   ├── audio_utils.py              # 🎵 Аудио обработка (torchaudio)
-│   └── lang_map.py                 # 🌍 Карта 600+ языков
-│
-├── 📂 models/                       # 📥 Локальные модели (опционально)
-├── 📂 docs/                         # 📄 Документация
-├── 📂 .github/                      # CI/CD
-│   └── workflows/
-│       └── ci.yml                  # GitHub Actions
-│
-├── run.sh                          # 🚀 Quick start
-├── LICENSE                         # 📜 Лицензия OVPL 1.0
-├── CHANGELOG.md                    # 📝 История изменений
-├── CONTRIBUTING.md                 # 🤝 Гайд для контрибьюторов
-├── CODE_OF_CONDUCT.md              # 📋 Кодекс поведения
-└── README.md                       # 📖 Этот файл
+├── pyproject.toml                # pip-конфигурация + deps
+├── .github/workflows/ci.yml       # GitHub Actions CI
+├── LICENSE                        # OVPL 1.0
+└── README.md                      # Этот файл
 ```
 
 ---

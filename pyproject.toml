@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omnivoice-mobile"
+version = "1.0.0"
+description = "Edge TTS for Termux/Android — 600+ Languages, Voice Cloning, INT4 Quantization"
+readme = "README.md"
+license = {text = "OVPL-1.0"}
+requires-python = ">=3.10"
+authors = [
+    {name = "OmniVoice Mobile Team", email = "omnivoice-mobile@proton.me"},
+]
+keywords = [
+    "tts", "text-to-speech", "termux", "android", "arm64",
+    "voice-cloning", "mobile", "edge-ai", "quantization",
+    "omnivoice", "qwen", "speech-synthesis",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "License :: Other/Proprietary License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+
+dependencies = [
+    "torch>=2.0.0",
+    "torchaudio>=2.0.0",
+    "transformers>=4.40.0",
+    "accelerate>=0.27.0",
+    "safetensors>=0.4.0",
+    "huggingface_hub>=0.20.0",
+    "soundfile>=0.12.0",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+quantize = [
+    "bitsandbytes>=0.42.0",
+    "llama-cpp-python>=0.2.0",
+]
+dev = [
+    "pytest>=7.0",
+    "pyflakes>=3.0",
+]
+
+[project.scripts]
+omnivoice = "omnivoice_mobile.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/kevinriverrrr-sudo/OmniVoice-Mobile"
+Repository = "https://github.com/kevinriverrrr-sudo/OmniVoice-Mobile"
+Issues = "https://github.com/kevinriverrrr-sudo/OmniVoice-Mobile/issues"
+"Original Project" = "https://github.com/k2-fsa/OmniVoice"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+omnivoice_mobile = ["**/*.json"]
