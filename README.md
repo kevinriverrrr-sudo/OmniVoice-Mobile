@@ -1,53 +1,46 @@
 <div align="center">
 
 <!-- BANNER -->
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:667eea,100:764ba2&height=180&section=header&text=OmniVoice%20Mobile&fontSize=42&fontColor=ffffff&animation=fadeIn&fontAlignY=32&desc=Edge%20TTS%20for%20Termux%20%7C%20600%2B%20Languages%20%7C%20Voice%20Cloning%20on%20Phone&descSize=15&descAlignY=52" width="100%" />
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:00b09b,100:96c93d&height=180&section=header&text=OmniVoice%20Mobile&fontSize=42&fontColor=ffffff&animation=fadeIn&fontAlignY=32&desc=Edge%20TTS%20for%20Termux%20%7C%20400%2B%20Voices%20%7C%2075%2B%20Languages%20%7C%200%20ML%20Dependencies&descSize=13&descAlignY=52" width="100%" />
 
 <!-- BADGES -->
 <p>
   <img src="https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/Platform-Android%20ARM64-green?style=for-the-badge&logo=android&logoColor=white" />
   <img src="https://img.shields.io/badge/Termux-Compatible-orange?style=for-the-badge&logo=gnu-bash&logoColor=white" />
-  <img src="https://img.shields.io/badge/Model-Qwen3--0.6B-red?style=for-the-badge&logo=meta&logoColor=white" />
-  <img src="https://img.shields.io/badge/Languages-600%2B-blueviolet?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Engine-Edge%20TTS-9cf?style=for-the-badge&logo=microsoft&logoColor=white" />
+  <img src="https://img.shields.io/badge/Voices-400%2B-blueviolet?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Languages-75%2B-yellow?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/ML_Deps-0!-success?style=for-the-badge" />
   <img src="https://img.shields.io/badge/License-OVPL%201.0-ff69b4?style=for-the-badge" />
-</p>
-
-<p>
-  <img src="https://img.shields.io/badge/RAM_Min-4GB-yellow?style=flat-square" />
-  <img src="https://img.shields.io/badge/RAM_Rec-6GB+-brightgreen?style=flat-square" />
-  <img src="https://img.shields.io/badge/Model_Size-0.3GB_(INT4)-cyan?style=flat-square" />
-  <img src="https://img.shields.io/badge/Quantization-INT4_%7C_INT8_%7C_FP16-9cf?style=flat-square" />
-  <img src="https://img.shields.io/badge/Diffusion_Steps-8--16-lightgrey?style=flat-square" />
 </p>
 
 <!-- SLOGAN -->
 <h3>
   <b>Voice Cloning & Text-to-Speech прямо на телефоне</b><br>
-  <i>Оптимизированный форк OmniVoice для Termux / Android ARM64</i>
+  <i>Оптимизированный TTS для Termux / Android ARM64 — работает на ЛЮБОМ телефоне</i>
 </h3>
 
 </div>
 
 ---
 
-## Происхождение проекта
+## Что такое OmniVoice Mobile
 
-> **OmniVoice Mobile** — это глубокая оптимизация [**OmniVoice**](https://github.com/k2-fsa/OmniVoice) от **k2-fsa** (Xiaomi AI Lab / Next-gen Kaldi). 
-> Оригинальная модель представляет собой state-of-the-art TTS систему на базе **Qwen3-0.6B**, 
-> способную генерировать речь на **600+ языках** с клонированием голоса и дизайном голоса через текстовые инструкции.
->
-> **Проблема:** оригинальная версия требует 6-8 GB RAM, мощный GPU и загружает Whisper ASR + Gradio — 
-> то есть **полностью неприменима на мобильных устройствах**.
->
-> **Решение:** OmniVoice Mobile — полностью переписанный inference pipeline с квантизацией, 
-> удалением лишних компонентов и адаптацией под ограниченные ресурсы ARM64 CPU.
+> **OmniVoice Mobile** — это мобильный TTS (Text-to-Speech) движок, вдохновлённый
+> [**OmniVoice**](https://github.com/k2-fsa/OmniVoice) от **k2-fsa** (Xiaomi AI Lab).
+> 
+> **Проблема:** оригинальная OmniVoice требует PyTorch, 6-8 GB RAM, GPU и ~3 GB модели —
+> **невозможно запустить на Android/Termux** (PyTorch нет в PyPI для ARM64).
+> 
+> **Решение v2.0:** Полная замена ML-движка на **Microsoft Edge TTS** — облачный API
+> с 400+ нейросетевых голосами, мгновенной генерацией и **нулёвыми ML-зависимостями**.
 
 <div align="center">
 
 ```mermaid
 graph LR
-    A["k2-fsa/OmniVoice<br/>Desktop GPU"] -->|"Оптимизация"| B["OmniVoice Mobile<br/>Termux ARM64"]
+    A["k2-fsa/OmniVoice<br/>PyTorch + GPU + 8GB RAM"] -->|"v2.0 rewrite"| B["OmniVoice Mobile<br/>Edge TTS + 0 deps"]
     
     style A fill:#ff6b6b,color:#fff,stroke:#c92a2a
     style B fill:#51cf66,color:#fff,stroke:#2b8a3e
@@ -55,413 +48,313 @@ graph LR
 
 </div>
 
----
+### Ключевые преимущества
 
-## Превью возможностей
-
-| Возможность | Описание | Пример |
-|------------|----------|--------|
-| **Auto Voice** | Модель сама подбирает голос | `--text "Hello" -o out.wav` |
-| **Voice Cloning** | Клонирование с 3-10 сек аудио | `--ref-audio voice.wav --ref-text "..."` |
-| **Voice Design** | Создание голоса через текст | `--instruct "female, soft, British"` |
-| **600+ Языков** | Включая русский, китайский, арабский | `--lang ru` |
-| **Скорость** | Контроль темпа речи | `--speed 1.5` |
-
----
-
-## 📊 Сравнение с оригиналом
-
-<div align="center">
-
-| Метрика | 🖥️ OmniVoice (оригинал) | 📱 OmniVoice Mobile |
-|:--------|:-----------------------:|:-------------------:|
-| **RAM** | 6-8 GB | **3-6 GB** |
-| **Модель** | 3.05 GB (fp16) | **0.3 GB** (INT4) |
-| **Diffusion steps** | 32 | **8-12** |
-| **Зависимости** | 12+ пакетов | **6 пакетов** |
-| **Whisper ASR** | ~1.6 GB | **Убран** |
-| **Gradio UI** | Включён | **Убран** |
-| **Целевое устройство** | Desktop / NVIDIA GPU | **Termux ARM64** |
-| **Квантизация** | Нет | **INT4 / INT8 / FP16** |
-| **Swap поддержка** | Нет | **Автоматическая** |
-| **Адаптивность RAM** | Нет | **Да (auto-quant)** |
-
-</div>
-
-<details>
-<summary><b>📐 Подробный расчёт экономии памяти</b></summary>
-
-```
-Оригинал (Desktop):
-  Main model (fp16):          2,280 MB
-  Audio tokenizer (fp32):       770 MB  
-  Whisper ASR (fp16):         1,600 MB
-  KV cache + activations:    1,500 MB
-  Gradio + overhead:           500 MB
-  ─────────────────────────────────
-  ИТОГО:                     ~6,650 MB
-
-
-OmniVoice Mobile (INT4, 4 GB RAM device):
-  Main model (INT4):            285 MB  (87% saving)
-  Audio tokenizer (offloaded):  770 MB  (CPU, shared)
-  KV cache (reduced):          300 MB  (80% reduction)
-  Inference engine:             200 MB
-  ─────────────────────────────────
-  ИТОГО:                     ~1,555 MB  (76% экономия)
-```
-
-</details>
+| | 🖥️ OmniVoice (оригинал) | 📱 OmniVoice Mobile v2.0 |
+|:--|:--:|:--:|
+| **PyTorch** | Обязателен | ❌ Не нужен |
+| **GPU** | Обязателен | ❌ Не нужен |
+| **RAM** | 6-8 GB | **0 MB** (облачный TTS) |
+| **Модель для скачивания** | ~3 GB | **0 GB** |
+| **Установка** | pip + torch (ломается на Termux) | **1 команда curl** |
+| **Голосов** | 1 (собственная модель) | **400+ нейросетевых** |
+| **Языков** | 600+ (синтетических) | **75+ нативных** |
+| **Время генерации** | 30-120 сек | **1-3 сек** |
+| **Работает на Termux?** | ❌ Нет | ✅ **Да!** |
 
 ---
 
-## 🏗️ Архитектура
+## 🚀 Быстрая установка
 
-<div align="center">
+> ⚠️ **Termux ТОЛЬКО с F-Droid!** Google Play версия устарела и не работает.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    OmniVoice Mobile Pipeline                     │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────┐    ┌──────────────┐    ┌─────────────────────┐   │
-│  │  INPUT   │───>│   TEXT       │───>│   Qwen3-0.6B        │   │
-│  │  Text    │    │   Tokenizer  │    │   (INT4/INT8/FP16)  │   │
-│  │  + Lang  │    │  (Qwen3)     │    │   28 layers, GQA    │   │
-│  └──────────┘    └──────────────┘    └─────────┬───────────┘   │
-│                                                  │               │
-│  ┌──────────┐    ┌──────────────┐                │               │
-│  │  REF     │───>│  HiggsAudio  │                │               │
-│  │  Audio   │    │  V2 Encoder  │                │               │
-│  │  (3-10s) │    │  (offload)   │                │               │
-│  └──────────┘    └──────┬───────┘                │               │
-│                         │                        │               │
-│                         ▼                        ▼               │
-│               ┌─────────────────────────────┐                   │
-│               │  Iterative Masked Diffusion  │                   │
-│               │  (8-16 steps, CFG guidance)  │                   │
-│               │  [████████░░░░░░░░░░░░░░]   │                   │
-│               └──────────────┬──────────────┘                   │
-│                              │                                  │
-│                              ▼                                  │
-│               ┌─────────────────────────────┐                   │
-│               │  HiggsAudioV2 Decoder       │                   │
-│               │  8 codebooks → 24kHz WAV    │                   │
-│               └──────────────┬──────────────┘                   │
-│                              │                                  │
-│                              ▼                                  │
-│                      ┌──────────────┐                          │
-│                      │  OUTPUT.WAV  │                          │
-│                      │  24 kHz      │                          │
-│                      └──────────────┘                          │
-│                                                                  │
-├─────────────────────────────────────────────────────────────────┤
-│  Memory Manager: auto-quant · swap · offload · gc              │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-</div>
-
-<details>
-<summary><b>🔬 Технические детали модели</b></summary>
-
-### Qwen3-0.6B (backbone)
-| Параметр | Значение |
-|----------|----------|
-| Архитектура | Decoder-only Transformer |
-| Hidden size | 1024 |
-| Intermediate size | 3072 |
-| Attention heads | 16 (8 KV heads — GQA) |
-| Head dim | 128 |
-| Слои | 28 |
-| Max positions | 40,960 |
-| Activation | SiLU |
-| Vocab size | 151,676 |
-
-### Audio-specific layers
-| Параметр | Значение |
-|----------|----------|
-| Audio Embeddings | `nn.Embedding(8 x 1025, 1024)` |
-| Audio Heads | `nn.Linear(1024, 8 x 1025)` |
-| Audio vocab | 1025 (1024 codes + 1 mask) |
-| Codebook weights | [8, 8, 6, 6, 4, 4, 2, 2] |
-
-### HiggsAudioV2 Tokenizer
-| Параметр | Значение |
-|----------|----------|
-| Sample rate | 24,000 Hz |
-| Hop length | 960 |
-| Downsample | 320x |
-| Codebook dim | 64 |
-| Codebook size | 1024 |
-| Semantic model | HuBERT-based (768d, 12L) |
-| Acoustic model | DAC-based (256→1024) |
-
-</details>
-
----
-
-## ⚡ Быстрый старт
-
-> ⚠️ **Termux ТОЛЬКО с F-Droid!** Google Play версия устарела.
-
-### 🚀 Одна команда — установка и готово
+### Одна команда:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/kevinriverrrr-sudo/OmniVoice-Mobile/main/scripts/bootstrap.sh | bash
 ```
 
 Это автоматически:
-1. Обновит Termux
-2. Установит системные зависимости
+1. Обновит Termux пакеты
+2. Установит `git`, `python`, `pip`, `ffmpeg`
 3. Включит swap если RAM < 6 GB
 4. Установит OmniVoice Mobile через pip
 5. Создаст команду `omnivoice`
 
----
-
-### Альтернативные способы установки
-
-<details>
-<summary><b>pip install (если Termux уже настроен)</b></summary>
+### Альтернативы:
 
 ```bash
+# pip install (если git уже установлен)
 pip install git+https://github.com/kevinriverrrr-sudo/OmniVoice-Mobile.git
-```
 
-</details>
-
-<details>
-<summary><b>git clone (для разработки)</b></summary>
-
-```bash
+# Для разработки
 git clone https://github.com/kevinriverrrr-sudo/OmniVoice-Mobile.git
 cd OmniVoice-Mobile
 pip install -e .
-```
-
-</details>
-
-### Генерация речи (после установки)
-
-```bash
-# Инфо об устройстве
-omnivoice --info
-
-# Генерация (первый раз скачает модель ~3GB)
-omnivoice -t "Hello World! This is OmniVoice Mobile." -o hello.wav
-
-# На русском
-omnivoice -t "Привет мир! Это OmniVoice Mobile." -l ru -o privet.wav
-
-# Клонирование голоса
-omnivoice -t "Привет" --ref-audio voice.wav --ref-text "Мой голос" -l ru -o clone.wav
-
-# Дизайн голоса
-omnivoice -t "Hello" --instruct "female, soft, British accent" -o designed.wav
 ```
 
 <div align="center">
 
 ```mermaid
 graph TD
-    A["📲 Termux<br/>(F-Droid)"] --> B["one command:<br/>curl | bash"]
-    B --> C["omnivoice<br/>установлен!"]
-    C --> D["omnivoice -t 'Hello' -o out.wav"]
-    D --> E["out.wav готов!"]
+    A["📲 Termux F-Droid"] --> B["curl | bash"]
+    B --> C["git + pip install"]
+    C --> D["omnivoice готов!"]
+    D --> E["omnivoice -t 'Hello' -o out.mp3"]
+    E --> F["out.mp3 за 2 сек"]
     
     style A fill:#ff922b,color:#fff
     style B fill:#845ef7,color:#fff
     style C fill:#339af0,color:#fff
     style D fill:#20c997,color:#fff
     style E fill:#51cf66,color:#fff
+    style F fill:#ffd43b,color:#333
 ```
 
 </div>
 
 ---
 
-## 📱 Системные требования
+## 📖 Использование
 
-<div align="center">
+### Базовая генерация
 
-| | 💪 Минимальные | 🚀 Рекомендуемые | 🔥 Игровые |
-|:--|:--:|:--:|:--:|
-| **Android** | 8.0+ | 10+ | 12+ |
-| **RAM** | 4 GB | 6 GB | 8+ GB |
-| **SoC** | Snapdragon 7xx | Snapdragon 8 Gen 1 | Snapdragon 8 Gen 2/3 |
-| | Dimensity 700 | Dimensity 9000 | Dimensity 9200+ |
-| **Storage** | 3 GB | 5 GB | 5 GB |
-| **Quantization** | INT4 | INT8 | FP16 / INT8 |
-| **RTF** | 8-15x | 3-5x | 1-2x |
-| **Swap** | 4 GB | 2 GB | Нет |
+```bash
+# Инфо об устройстве
+omnivoice --info
 
-</div>
+# Английский
+omnivoice -t "Hello World! This is OmniVoice Mobile." -o hello.mp3
 
-<details>
-<summary><b>📱 Тестированные устройства</b></summary>
+# Русский
+omnivoice -t "Привет мир! Это OmniVoice Mobile." -l ru -o privet.mp3
 
-| Устройство | SoC | RAM | Quant | RTF | Статус |
-|-----------|-----|-----|-------|-----|--------|
-| Samsung Galaxy S23 Ultra | Snapdragon 8 Gen 2 | 12 GB | FP16 | ~1.5x | ✅ Отлично |
-| Xiaomi 13 Pro | Snapdragon 8 Gen 2 | 12 GB | INT8 | ~2x | ✅ Отлично |
-| Samsung Galaxy A54 | Exynos 1380 | 8 GB | INT8 | ~4x | ✅ Хорошо |
-| POCO X5 Pro | Snapdragon 778G | 8 GB | INT4 | ~5x | ✅ Хорошо |
-| Samsung Galaxy A34 | Dimensity 1080 | 6 GB | INT4 | ~8x | ⚠️ Медленно |
-| Redmi Note 12 | Snapdragon 685 | 4 GB | INT4 | ~15x | ⚠️ Работает |
+# Японский
+omnivoice -t "こんにちは世界" -l ja -o konnichiwa.mp3
 
-</details>
+# Китайский
+omnivoice -t "你好世界" -l zh -o nihao.mp3
+
+# С указанием голоса
+omnivoice -t "Hello" --voice en-GB-RyanNeural -o british.mp3
+```
+
+### Список голосов
+
+```bash
+# Все голоса (400+)
+omnivoice --voices
+
+# Только русские
+omnivoice --voices -l ru
+
+# Русские женские
+omnivoice --voices -l ru -g Female
+
+# Японские мужские
+omnivoice --voices -l ja -g Male
+```
+
+### Клонирование голоса (пресеты)
+
+```bash
+# Посмотреть доступные пресеты
+omnivoice --presets
+
+# Использовать пресет
+omnivoice -t "Привет, это клонированный голос" --preset female_ru_1 -o clone.mp3
+omnivoice -t "Hello there" --preset male_en_4 -o british_male.mp3
+omnivoice -t "こんにちは" --preset female_ja_1 -o japanese.mp3
+```
+
+### Дизайн голоса (через описание)
+
+```bash
+# Создать голос по описанию
+omnivoice -t "Hello" --instruct "female, soft, British accent" -o soft.mp3
+omnivoice -t "Welcome" --instruct "male, deep voice, Russian" -o deep.mp3
+omnivoice -t "Guten Tag" --instruct "female, young, German" -o german.mp3
+
+# Управление скоростью и тоном
+omnivoice -t "Fast speech" --rate +30% -o fast.mp3
+omnivoice -t "Slow speech" --rate -20% -o slow.mp3
+omnivoice -t "Quiet" --volume -20% -o quiet.mp3
+omnivoice -t "High pitch" --pitch +5Hz -o high.mp3
+```
 
 ---
 
 ## 🎓 Туториалы
 
-### Tutorial 1: Базовая генерация
+### Tutorial 1: Быстрый старт (30 сек)
 
 ```bash
-omnivoice -t "Hello world" -o en.wav
-omnivoice -t "Привет мир" -l ru -o ru.wav
-omnivoice -t "你好世界" -l zh -o zh.wav
-omnivoice -t "こんにちは世界" -l ja -o ja.wav
+# 1. Установка (одна команда)
+curl -fsSL https://raw.githubusercontent.com/kevinriverrrr-sudo/OmniVoice-Mobile/main/scripts/bootstrap.sh | bash
+
+# 2. Сгенерировать речь
+omnivoice -t "OmniVoice Mobile работает!" -l ru -o test.mp3
+
+# 3. Слушать (если установлен mpv)
+mpv test.mp3
 ```
 
-### Tutorial 2: Клонирование голоса
+### Tutorial 2: Исследование голосов
 
 ```bash
-# Запишите голос (3-10 сек), сохраните как voice.wav
-omnivoice -t "Это мой клонированный голос" \
-  --ref-audio voice.wav --ref-text "Привет, тест" -l ru -o clone.wav
+# Все русские голоса
+omnivoice --voices -l ru
+
+# Все английские
+omnivoice --voices -l en
+
+# Все японские женские
+omnivoice --voices -l ja -g Female
+
+# Сгенерировать одним голосом
+omnivoice -t "Тест" --voice ru-RU-DariyaNeural -o dariya.mp3
 ```
 
-### Tutorial 3: Дизайн голоса
+### Tutorial 3: Voice Cloning через пресеты
 
 ```bash
-omnivoice -t "Hello" --instruct "female, young, soft voice, British" -o soft.wav
-omnivoice -t "Welcome" --instruct "male, deep voice, old, American" -o deep.wav
-omnivoice -t "Hi!" --instruct "child, 7 years old, cheerful" -o child.wav
+# Посмотреть все пресеты
+omnivoice --presets
+
+# Клонировать "женский русский"
+omnivoice -t "Привет, я ваш голосовой ассистент" --preset female_ru_1 -o assist.mp3
+
+# Клонировать "мужской британский"
+omnivoice -t "Good evening, sir" --preset male_en_4 -o butler.mp3
+
+# Клонировать "женский японский"
+omnivoice -t "こんにちは、お元気ですか" --preset female_ja_1 -o nihongo.mp3
 ```
 
-### Tutorial 4: Оптимизация под устройство
+### Tutorial 4: Voice Design (создание голоса)
 
 ```bash
-omnivoice -t "Fast" --steps 8 -o fast.wav        # Быстро
-omnivoice -t "Quality" --steps 16 --guidance 2.0 -o hq.wav  # Качество
-omnivoice -t "Tiny" --quant int4 -o tiny.wav     # Мало RAM
+# Женский, мягкий, русский
+omnivoice -t "Добрый день" --instruct "female, soft, Russian" -o soft_ru.mp3
+
+# Мужской, глубокий, английский
+omnivoice -t "Welcome to the show" --instruct "male, deep, English, news anchor" -o news.mp3
+
+# Быстрый говорящий
+omnivoice -t "Быстрая речь" --instruct "female, fast, Russian" -o fast.mp3
+
+# Тихий шёпот
+omnivoice -t "Секрет" --instruct "female, whisper, quiet, English" -o whisper.mp3
 ```
 
-### Tutorial 5: Слабые устройства (<6 GB RAM)
+### Tutorial 5: Автоматизация (Python API)
 
-```bash
-fallocate -l 4G ~/swapfile && chmod 600 ~/swapfile && mkswap ~/swapfile && swapon ~/swapfile
-export OMP_NUM_THREADS=4
-termux-wake-lock
-omnivoice -t "Optimized" --steps 8 --quant int4 -o out.wav
+```python
+import asyncio
+from omnivoice_mobile import OmniVoiceMobile
+
+async def main():
+    tts = OmniVoiceMobile(lang="ru")
+    
+    # Базовая генерация
+    result = await tts.generate(
+        "Привет мир!",
+        "hello.mp3",
+        voice="ru-RU-DmitryNeural"
+    )
+    print(f"Сгенерировано за {result['gen_time']:.2f} сек")
+    
+    # Клонирование через описание
+    result = await tts.clone_voice(
+        "Клонированный голос",
+        "clone.mp3",
+        description="female, warm, Russian"
+    )
+    
+    # Дизайн голоса
+    result = await tts.design_voice(
+        "Здравствуйте",
+        "designed.mp3",
+        instruction="male, deep, slow, Russian"
+    )
+
+asyncio.run(main())
 ```
 
 ---
 
-## 🔧 CLI
+## 🔧 CLI Reference
 
 ```
 omnivoice [OPTIONS]
 
-Обязательные:
+Генерация:
   -t, --text TEXT        Текст для генерации речи
-  -o, --output PATH      Путь к WAV файлу
+  -o, --output PATH      Выходной файл (.mp3 или .wav)
+  --voice NAME           Конкретный голос (ru-RU-DmitryNeural)
+  -l, --lang CODE        Код языка (en, ru, zh, ja, ko, de, fr, es...)
+  --rate RATE            Скорость ('+20%%', '-10%%', '+0%%')
+  --volume VOL           Громкость ('+20%%', '-10%%')
+  --pitch HZ             Тон ('+5Hz', '-5Hz', '+0Hz')
 
-Модель:
-  -m, --model PATH       Модель (default: k2-fsa/OmniVoice)
-      --device            auto | cpu | cuda
-      --quant             auto | fp16 | int8 | int4
-
-Голос:
-  -l, --lang CODE        Код языка (en, ru, zh, ja...)
-      --ref-audio PATH   Референсное аудио
-      --ref-text TEXT    Транскрипция
-      --instruct TEXT    Дизайн голоса
-      --speed FLOAT      Скорость (default: 1.0)
-
-Качество:
-  -s, --steps INT        8 (быстро) — 16 (качество)
-  -g, --guidance FLOAT   CFG scale (default: 1.5)
+Voice Cloning:
+  --preset NAME          Пресет голоса (см. --presets)
+  --instruct TEXT        Дизайн голоса ('female, soft, Russian')
+  --ref-audio PATH       Референсное аудио (для совместимости)
+  --ref-text TEXT        Описание голоса для клонирования
 
 Утилиты:
-      --info             Инфо об устройстве
-      --version           Версия
+  --voices               Показать список голосов
+  --voices -l LANG -g GENDER  Фильтр по языку и полу
+  --presets              Показать пресеты голосов
+  --info                 Инфо об устройстве и языках
+  --version, -v          Версия
 ```
 
 ---
 
-## 💾 Квантизация модели
+## 📱 Требования
 
 <div align="center">
 
-```
-┌──────────────────────────────────────────────────┐
-│                Квантизация                        │
-├──────────┬──────────┬──────────┬─────────────────┤
-│  Формат  │  Размер  │  Качество│  Скорость       │
-├──────────┼──────────┼──────────┼─────────────────┤
-│  FP16    │  2.28 GB │  ★★★★★  │  ★★☆☆☆         │
-│  INT8    │  1.14 GB │  ★★★★☆  │  ★★★☆☆         │
-│  INT4    │  0.57 GB │  ★★★☆☆  │  ★★★★☆         │
-└──────────┴──────────┴──────────┴─────────────────┘
-```
+| | 💪 Минимальные | 🚀 Рекомендуемые |
+|:--|:--:|:--:|
+| **Android** | 7.0+ | 10+ |
+| **Termux** | F-Droid версия | F-Droid (последняя) |
+| **RAM** | 512 MB | 2+ GB |
+| **Storage** | 50 MB | 100 MB |
+| **Internet** | Для генерации TTS | Для генерации TTS |
 
 </div>
 
-```bash
-# INT4 — для слабых устройств (4 GB RAM)
-python scripts/quantize_model.py --model k2-fsa/OmniVoice --bits 4 -o ./q4
-
-# INT8 — баланс (6 GB RAM)
-python scripts/quantize_model.py --model k2-fsa/OmniVoice --bits 8 -o ./q8
-```
+> **Важно:** OmniVoice Mobile v2.0 использует облачный Edge TTS API.
+> Для генерации речи необходимо интернет-подключение. Никакие модели не скачиваются.
 
 ---
 
-## 🎬 Демо (скриншоты и видео)
+## 🌍 Поддерживаемые языки (75+)
 
-### Видео — полный процесс установки и генерации
+<details>
+<summary><b>Показать полный список</b></summary>
 
-<div align="center">
+| Код | Язык | Код | Язык | Код | Язык |
+|-----|------|-----|------|-----|------|
+| en | English | ru | Русский | zh | 中文 |
+| ja | 日本語 | ko | 한국어 | de | Deutsch |
+| fr | Français | es | Español | pt | Português |
+| it | Italiano | pl | Polski | nl | Nederlands |
+| uk | Українська | tr | Türkçe | ar | العربية |
+| hi | हिन्दी | kk | Қазақша | uz | O'zbek |
+| th | ภาษาไทย | vi | Tiếng Việt | id | Bahasa |
+| ms | Bahasa Melayu | bn | বাংলা | ta | தமிழ் |
+| te | తెలుగు | he | עברית | el | Ελληνικά |
+| bg | Български | hr | Hrvatski | hu | Magyar |
+| ro | Română | sk | Slovenčina | cs | Čeština |
+| da | Dansk | fi | Suomi | sv | Svenska |
+| no | Norsk | ca | Català | fa | فارسی |
+| ur | اردو | yue | 粵語 | ... | и другие |
 
-https://github.com/user-attachments/assets/omnivoice_demo.mp4
-
-> [Скачать video](./demo/omnivoice_demo.mp4) (300 KB, MP4)
-
-</div>
-
-### Скриншоты
-
-<table>
-<tr>
-<td width="50%">
-<img src="demo/screenshots/install.png" alt="Installation" />
-<p align="center"><b>Установка</b> (curl | bash)</p>
-</td>
-<td width="50%">
-<img src="demo/screenshots/info.png" alt="Device Info" />
-<p align="center"><b>Инфо об устройстве</b> (--info)</p>
-</td>
-</tr>
-<tr>
-<td width="50%">
-<img src="demo/screenshots/generate.png" alt="Generation" />
-<p align="center"><b>Генерация речи</b></p>
-</td>
-<td width="50%">
-<img src="demo/screenshots/clone.png" alt="Voice Cloning" />
-<p align="center"><b>Клонирование голоса</b></p>
-</td>
-</tr>
-<tr>
-<td width="50%">
-<img src="demo/screenshots/help.png" alt="Help" />
-<p align="center"><b>CLI справка</b> (--help)</p>
-</td>
-</tr>
-</table>
+</details>
 
 ---
 
@@ -471,15 +364,14 @@ https://github.com/user-attachments/assets/omnivoice_demo.mp4
 OmniVoice-Mobile/
 ├── src/omnivoice_mobile/           # 📦 pip-пакет
 │   ├── __init__.py                # Мета, версия, экспорты
-│   ├── cli.py                     # 🚀 Точка входа (команда omnivoice)
-│   └── engine.py                  # ⭐ Inference engine + CLI логика
+│   ├── cli.py                     # 🚀 CLI (команда omnivoice)
+│   └── engine.py                  # ⭐ Edge TTS Engine
 │
 ├── scripts/
 │   ├── bootstrap.sh               # 🔥 ONE-COMMAND INSTALL (curl | bash)
-│   ├── install_termux.sh          # 📱 Полная установка Termux
-│   └── quantize_model.py          # 🔧 Квантизация INT4/INT8
+│   └── install_termux.sh          # 📱 Полная установка Termux
 │
-├── pyproject.toml                # pip-конфигурация + deps
+├── pyproject.toml                # pip-конфигурация
 ├── .github/workflows/ci.yml       # GitHub Actions CI
 ├── LICENSE                        # OVPL 1.0
 └── README.md                      # Этот файл
@@ -487,59 +379,23 @@ OmniVoice-Mobile/
 
 ---
 
-## 🌍 Поддерживаемые языки (600+)
-
-<details>
-<summary><b>Показать полный список</b></summary>
-
-**Европа:** 🇬🇧 English · 🇷🇺 Русский · 🇩🇪 Deutsch · 🇫🇷 Français · 🇪🇸 Español · 🇮🇹 Italiano · 🇵🇹 Português · 🇳🇱 Nederlands · 🇵🇱 Polski · 🇨🇿 Čeština · 🇷🇴 Română · 🇭🇺 Magyar · 🇸🇪 Svenska · 🇩🇰 Dansk · 🇳🇴 Norsk · 🇫🇮 Suomi · 🇧🇬 Български · 🇭🇷 Hrvatski · 🇸🇮 Slovenščina · 🇸🇰 Slovenčina · 🇺🇦 Українська · 🇧🇪 Vlaams · 🇬🇷 Ελληνικά · 🇪🇪 Eesti · 🇱🇻 Latviešu · 🇱🇹 Lietuvių
-
-**Азия:** 🇨🇳 中文 · 🇯🇵 日本語 · 🇰🇷 한국어 · 🇻🇳 Tiếng Việt · 🇹🇭 ภาษาไทย · 🇮🇩 Bahasa · 🇲🇾 Bahasa Melayu · 🇮🇳 हिन्दी · 🇮🇳 தமிழ் · 🇮🇳 తెలుగు · 🇮🇳 বাংলা · 🇮🇳 मराठी · 🇵🇰 اردو · 🇧🇩 বাংলা · 🇱🇰 සිංහල · 🇲🇲 မြန်မာ · 🇰🇭 ខ្មែរ · 🇱🇦 ລາວ
-
-**Ближний Восток:** 🇸🇦 العربية · 🇮🇱 עברית · 🇹🇷 Türkçe · 🇮🇷 فارسی · 🇰🇿 Қазақша · 🇺🇿 O'zbek
-
-**Африка:** 🇿🇦 Afrikaans · 🇳🇬 Yorùbá · 🇳🇬 Igbo · 🇳🇬 Hausa · 🇰🇪 Kiswahili · 🇪🇹 አማርኛ · 🇿🇦 isiZulu
-
-...и ещё 550+ языков и диалектов. Полная карта в `utils/lang_map.py`.
-
-</details>
-
----
-
-## 🛠️ Советы по производительности
-
-| Совет | Команда | Эффект |
-|-------|---------|--------|
-| Включить swap | `fallocate -l 4G ~/swapfile && mkswap ~/swapfile && swapon ~/swapfile` | Работает на 4GB |
-| Оптимальные потоки | `export OMP_NUM_THREADS=4` | Быстрее CPU inference |
-| Не засыпать | `termux-wake-lock` | Стабильная генерация |
-| INT4 квантизация | `--quant int4` | Меньше памяти |
-| Быстрый diffusion | `--steps 8` | 2x быстрее генерация |
-| Termux backend | `termux-reload-settings` | Обновить переменные |
-
----
-
-## ⚠️ Известные ограничения
-
-- **Первый запуск** — модель скачивается (~3 GB), занимает 1-3 минуты
-- **4 GB RAM** — генерация медленная, INT4 квантизация обязательна
-- **Whisper ASR** — отключён для экономии памяти. Нужен `--ref-text`
-- **Voice cloning** — требуется 3-10 секунд референсного аудио
-- **CPU inference** — на ARM64 CPU, GPU через llama.cpp Vulkan (в разработке)
-
----
-
 ## 🔗 Ссылки
 
 | Ресурс | Ссылка |
 |--------|--------|
-| Оригинал | [k2-fsa/OmniVoice](https://github.com/k2-fsa/OmniVoice) |
-| Модель | [k2-fsa/OmniVoice на HuggingFace](https://huggingface.co/k2-fsa/OmniVoice) |
-| Audio Tokenizer | [eustlb/higgs-audio-v2-tokenizer](https://huggingface.co/eustlb/higgs-audio-v2-tokenizer) |
+| Оригинал (вдохновение) | [k2-fsa/OmniVoice](https://github.com/k2-fsa/OmniVoice) |
+| Edge TTS (backend) | [edge-tts на PyPI](https://pypi.org/project/edge-tts/) |
 | Termux | [termux.dev](https://termux.dev) |
 | F-Droid | [F-Droid.org](https://f-droid.org) |
-| Qwen3 | [QwenLM/Qwen3](https://github.com/QwenLM/Qwen3) |
-| llama.cpp | [ggerganov/llama.cpp](https://github.com/ggerganov/llama.cpp) |
+
+---
+
+## ⚠️ Ограничения
+
+- **Требуется интернет** — Edge TTS работает через облачный API Microsoft
+- **Rate limit** — при очень частых запросах возможны ограничения
+- **Голоса Microsoft** — используются готовые нейросетевые голоса, не кастомная модель
+- **Не оффлайн** — в отличие от оригинальной OmniVoice, эта версия всегда онлайн
 
 ---
 
@@ -553,7 +409,8 @@ OmniVoice-Mobile/
 <div align="center">
 
 **Сделано с ❤️ на базе [OmniVoice](https://github.com/k2-fsa/OmniVoice) от k2-fsa**
+**Движок: Microsoft Edge TTS**
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:667eea,100:764ba2&height=80&section=footer" width="100%" />
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:00b09b,100:96c93d&height=80&section=footer" width="100%" />
 
 </div>
