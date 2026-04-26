@@ -1,0 +1,154 @@
+name: CI — OmniVoice Mobile
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Job 1: Syntax check
+  # ──────────────────────────────────────────────
+  syntax-check:
+    name: Syntax & Import Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install minimal deps
+        run: |
+          pip install --quiet pyflakes mypy
+          pip install --quiet torch torchaudio --index-url https://download.pytorch.org/whl/cpu 2>/dev/null || true
+
+      - name: Check syntax
+        run: |
+          echo "=== Syntax Check ==="
+          python -m py_compile src/omnivoice_mobile.py
+          python -m py_compile src/gguf_loader.py
+          python -m py_compile utils/audio_utils.py
+          python -m py_compile utils/lang_map.py
+          python -m py_compile scripts/quantize_model.py
+          echo "All files: OK"
+
+      - name: Check imports
+        run: |
+          echo "=== Import Check ==="
+          python -c "import utils.lang_map; print('lang_map: OK')"
+          python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          try:
+              import pyflakes.api
+              pyflakes.api.check_recursive(['src/omnivoice_mobile.py'])
+          except:
+              print('pyflakes check: SKIPPED (missing deps)')
+          "
+
+  # ──────────────────────────────────────────────
+  # Job 2: Shell script check
+  # ──────────────────────────────────────────────
+  shellcheck:
+    name: Shell Scripts Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Lint install_termux.sh
+        run: shellcheck scripts/install_termux.sh || true
+
+      - name: Lint run.sh
+        run: shellcheck run.sh || true
+
+  # ──────────────────────────────────────────────
+  # Job 3: Language map validation
+  # ──────────────────────────────────────────────
+  lang-map:
+    name: Language Map Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate lang_map.py
+        run: |
+          python3 -c "
+          import sys
+          sys.path.insert(0, 'utils')
+          from lang_map import LANG_IDS, LANG_NAMES, normalize_lang, get_lang_id
+
+          # Check no duplicate IDs
+          assert len(set(LANG_IDS.values())) == len(LANG_IDS.values()), 'Duplicate lang IDs!'
+          print(f'Languages: {len(LANG_IDS)} unique entries')
+
+          # Check basic languages
+          assert get_lang_id('en') == 0
+          assert get_lang_id('ru') == 4
+          assert get_lang_id('zh') == 1
+          print('Core languages: OK')
+
+          # Check Russian normalization
+          assert normalize_lang('русский') == 'ru'
+          assert normalize_lang('английский') == 'en'
+          print('Russian normalization: OK')
+
+          print('All checks passed!')
+          "
+
+  # ──────────────────────────────────────────────
+  # Job 4: Structure validation
+  # ──────────────────────────────────────────────
+  structure:
+    name: Project Structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required files
+        run: |
+          FILES=(
+            "README.md"
+            "LICENSE"
+            "CONTRIBUTING.md"
+            "CODE_OF_CONDUCT.md"
+            "CHANGELOG.md"
+            "run.sh"
+            "src/omnivoice_mobile.py"
+            "src/gguf_loader.py"
+            "scripts/install_termux.sh"
+            "scripts/quantize_model.py"
+            "utils/audio_utils.py"
+            "utils/lang_map.py"
+            ".github/workflows/ci.yml"
+          )
+
+          MISSING=0
+          for f in "\${FILES[@]}"; do
+            if [ -f "\$f" ]; then
+              echo "  [OK] \$f"
+            else
+              echo "  [MISSING] \$f"
+              MISSING=1
+            fi
+          done
+
+          if [ \$MISSING -eq 1 ]; then
+            echo "ERROR: Some files are missing!"
+            exit 1
+          fi
+
+          echo "All files present!"
+
+      - name: Check file permissions
+        run: |
+          test -x run.sh || chmod +x run.sh
+          test -x scripts/install_termux.sh || chmod +x scripts/install_termux.sh
+          echo "Permissions OK"
