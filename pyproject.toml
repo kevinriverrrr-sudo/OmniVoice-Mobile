@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "omnivoice-mobile"
-version = "2.0.0"
-description = "Edge TTS for Termux/Android — 400+ Voices, 75+ Languages, Voice Cloning, Zero ML Dependencies"
+version = "2.1.0"
+description = "Edge TTS for Termux/Android — 150+ Voice Presets, 75+ Languages, Voice Cloning, Russian Default. By kevinriverrrr-sudo"
 readme = "README.md"
 license = {text = "OVPL-1.0"}
 requires-python = ">=3.10"
 authors = [
-    {name = "OmniVoice Mobile Team", email = "omnivoice-mobile@proton.me"},
+    {name = "kevinriverrrr-sudo", email = "omnivoice-mobile@proton.me"},
 ]
 keywords = [
     "tts", "text-to-speech", "termux", "android", "arm64",

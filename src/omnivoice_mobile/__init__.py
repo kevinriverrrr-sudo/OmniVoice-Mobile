@@ -1,18 +1,16 @@
 """
-OmniVoice Mobile v2.0 — Edge TTS for Termux / Android ARM64
+OmniVoice Mobile v2.1 — Edge TTS for Termux / Android ARM64
 
-Оптимизированный форк k2-fsa/OmniVoice (Xiaomi AI Lab).
-Полностью переписан на базе Microsoft Edge TTS.
-НЕ требует PyTorch, transformers или GPU.
+Русский язык по умолчанию. 150+ пресетов голосов. Клонирование голоса.
+НЕ требует PyTorch. Работает на ЛЮБОМ Termux.
 
-400+ голосов | 75+ языков | Клонирование голоса | 0 ML зависимостей
-
-GitHub: https://github.com/kevinriverrrr-sudo/OmniVoice-Mobile
-Based on: https://github.com/k2-fsa/OmniVoice (Apache-2.0)
+Автор: kevinriverrrr-sudo (GitHub)
+Репозиторий: https://github.com/kevinriverrrr-sudo/OmniVoice-Mobile
+На базе: https://github.com/k2-fsa/OmniVoice (Apache-2.0)
 """
 
-__version__ = "2.0.0"
-__author__ = "OmniVoice Mobile Team"
+__version__ = "2.1.0"
+__author__ = "kevinriverrrr-sudo"
 __license__ = "OVPL 1.0"
 
 from omnivoice_mobile.engine import (
