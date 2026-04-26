@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OmniVoice Mobile — Install</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+    padding: 40px 20px;
+  }
+
+  .terminal-wrapper {
+    width: 750px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow:
+      0 25px 60px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      0 0 80px rgba(0, 200, 150, 0.05);
+  }
+
+  .title-bar {
+    background: linear-gradient(180deg, #2d2d3f 0%, #252536 100%);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+  .dot.red   { background: #ff5f57; }
+  .dot.yellow { background: #febc2e; }
+  .dot.green  { background: #28c840; }
+
+  .title-bar-text {
+    flex: 1;
+    text-align: center;
+    color: #8a8a9a;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    margin-right: 52px;
+  }
+
+  .terminal-body {
+    background: #0d1117;
+    padding: 24px;
+    line-height: 1.7;
+    font-size: 13px;
+    color: #c9d1d9;
+    min-height: 480px;
+  }
+
+  .prompt {
+    color: #28c840;
+    font-weight: 700;
+  }
+
+  .command {
+    color: #e6edf3;
+  }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 16px;
+    background: #28c840;
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+
+  .url {
+    color: #79c0ff;
+  }
+
+  .muted {
+    color: #6e7681;
+  }
+
+  .success {
+    color: #28c840;
+  }
+
+  .info {
+    color: #58a6ff;
+  }
+
+  .warn {
+    color: #d29922;
+  }
+
+  .bold {
+    font-weight: 700;
+  }
+
+  .dim {
+    color: #484f58;
+  }
+
+  .line {
+    min-height: 1.7em;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .banner {
+    color: #39d353;
+    text-shadow: 0 0 8px rgba(57, 211, 83, 0.15);
+  }
+
+  .progress-bar {
+    display: inline-block;
+  }
+
+  .progress-fill {
+    color: #28c840;
+  }
+
+  .highlight {
+    color: #f0883e;
+  }
+
+  .white {
+    color: #f0f6fc;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.5s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="terminal-wrapper">
+  <div class="title-bar">
+    <div class="dot red"></div>
+    <div class="dot yellow"></div>
+    <div class="dot green"></div>
+    <span class="title-bar-text">Termux — localhost</span>
+  </div>
+  <div class="terminal-body">
+
+    <div class="line"><span class="prompt">~ $ </span><span class="command">curl -fsSL https://omnivoice.dev/install.sh | bash</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line"><span class="banner">╔══════════════════════════════════════════════╗</span></div>
+    <div class="line"><span class="banner">║       OmniVoice Mobile  v1.0.0              ║</span></div>
+    <div class="line"><span class="banner">║   Edge TTS for Termux / Android ARM64      ║</span></div>
+    <div class="line"><span class="banner">║   600+ Languages | Voice Cloning           ║</span></div>
+    <div class="line"><span class="banner">║   Based on k2-fsa/OmniVoice (Apache-2.0)   ║</span></div>
+    <div class="line"><span class="banner">╚══════════════════════════════════════════════╝</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line"><span class="info">[INFO]</span> <span class="white">Bootstrapping OmniVoice Mobile on Android/Termux...</span></div>
+    <div class="line"><span class="info">[INFO]</span> <span class="muted">Detected: aarch64-linux-android | Termux 0.118.0</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line"><span class="info">[1/6]</span> <span class="white">Updating apt packages...</span> <span class="success">done</span></div>
+    <div class="line"><span class="info">[2/6]</span> <span class="white">Installing Python 3.11 + pip...</span> <span class="success">done</span></div>
+    <div class="line"><span class="info">[3/6]</span> <span class="white">Installing torch (CPU optimized)...</span> <span class="success">done</span></div>
+    <div class="line"><span class="info">[4/6]</span> <span class="white">Installing OmniVoice SDK + dependencies...</span> <span class="success">done</span></div>
+    <div class="line"><span class="info">[5/6]</span> <span class="white">Downloading voice model (sherpa-onnx-omnivoice)...</span></div>
+    <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="dim">████████████████████████████████████████</span> <span class="muted">100%</span> <span class="dim">48.2 MB</span></div>
+    <div class="line"><span class="info">[6/6]</span> <span class="white">Configuring Edge TTS + language packs...</span> <span class="success">done</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line"><span class="success bold">  ✔  OmniVoice Mobile installed successfully!</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line"><span class="white">  Installed to: </span><span class="url">~/omnivoice-mobile</span></div>
+    <div class="line"><span class="white">  Binary link:  </span><span class="url">/data/data/com.termux/files/usr/bin/omnivoice</span></div>
+    <div class="line"><span class="white">  Version:      </span><span class="highlight">v1.0.0</span></div>
+    <div class="line"><span class="white">  Models:       </span><span class="muted">sherpa-onnx-omnivoice (48.2 MB)</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line"><span class="dim">  Run 'omnivoice --help' to get started.</span></div>
+    <div class="line"><span class="dim">  Run 'omnivoice --info' to verify your device.</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line"><span class="prompt">~ $ </span><span class="cursor"></span></div>
+
+  </div>
+</div>
+</body>
+</html>

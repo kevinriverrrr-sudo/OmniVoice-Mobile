@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OmniVoice Mobile — Help</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+    padding: 40px 20px;
+  }
+
+  .terminal-wrapper {
+    width: 750px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow:
+      0 25px 60px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      0 0 80px rgba(0, 200, 150, 0.05);
+  }
+
+  .title-bar {
+    background: linear-gradient(180deg, #2d2d3f 0%, #252536 100%);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.red    { background: #ff5f57; }
+  .dot.yellow { background: #febc2e; }
+  .dot.green  { background: #28c840; }
+
+  .title-bar-text {
+    flex: 1;
+    text-align: center;
+    color: #8a8a9a;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    margin-right: 52px;
+  }
+
+  .terminal-body {
+    background: #0d1117;
+    padding: 24px;
+    line-height: 1.7;
+    font-size: 13px;
+    color: #c9d1d9;
+  }
+
+  .prompt { color: #28c840; font-weight: 700; }
+  .command { color: #e6edf3; }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 16px;
+    background: #28c840;
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+  }
+
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .line { min-height: 1.7em; white-space: pre-wrap; }
+
+  .cyan   { color: #56d4dd; }
+  .white  { color: #f0f6fc; }
+  .muted  { color: #6e7681; }
+  .green  { color: #28c840; }
+  .yellow { color: #d29922; }
+  .blue   { color: #58a6ff; }
+  .bold   { font-weight: 700; }
+  .dim    { color: #484f58; }
+  .orange { color: #f0883e; }
+
+  .usage-cmd  { color: #ff7b72; }
+  .usage-arg  { color: #79c0ff; }
+  .flag-name  { color: #d2a8ff; }
+  .flag-desc  { color: #8b949e; }
+  .section    { color: #56d4dd; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="terminal-wrapper">
+  <div class="title-bar">
+    <div class="dot red"></div>
+    <div class="dot yellow"></div>
+    <div class="dot green"></div>
+    <span class="title-bar-text">Termux — localhost</span>
+  </div>
+  <div class="terminal-body">
+
+    <div class="line"><span class="prompt">~ $ </span><span class="command">omnivoice --help</span></div>
+    <div class="line">&nbsp;</div>
+
+    <!-- Banner -->
+    <div class="line"><span class="green">╔══════════════════════════════════════════════╗</span></div>
+    <div class="line"><span class="green">║       OmniVoice Mobile  v1.0.0              ║</span></div>
+    <div class="line"><span class="green">║   Edge TTS for Termux / Android ARM64      ║</span></div>
+    <div class="line"><span class="green">║   600+ Languages | Voice Cloning           ║</span></div>
+    <div class="line"><span class="green">║   Based on k2-fsa/OmniVoice (Apache-2.0)   ║</span></div>
+    <div class="line"><span class="green">╚══════════════════════════════════════════════╝</span></div>
+    <div class="line">&nbsp;</div>
+
+    <!-- Usage -->
+    <div class="line"><span class="section">USAGE</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line">  <span class="usage-cmd">omnivoice</span> <span class="usage-arg">&lt;command&gt;</span> <span class="muted">[options]</span></div>
+    <div class="line">&nbsp;</div>
+
+    <!-- Commands -->
+    <div class="line"><span class="section">COMMANDS</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line">  <span class="flag-name">generate</span>    <span class="flag-desc">Generate speech from text</span></div>
+    <div class="line">  <span class="flag-name">clone</span>        <span class="flag-desc">Clone a voice from reference audio</span></div>
+    <div class="line">  <span class="flag-name">list-voices</span>  <span class="flag-desc">List available TTS voices</span></div>
+    <div class="line">  <span class="flag-name">list-langs</span>   <span class="flag-desc">List supported languages</span></div>
+    <div class="line">  <span class="flag-name">info</span>         <span class="flag-desc">Show device and model information</span></div>
+    <div class="line">  <span class="flag-name">update</span>       <span class="flag-desc">Update to the latest version</span></div>
+    <div class="line">  <span class="flag-name">uninstall</span>    <span class="flag-desc">Remove OmniVoice Mobile</span></div>
+    <div class="line">&nbsp;</div>
+
+    <!-- Generate options -->
+    <div class="line"><span class="section">GENERATE OPTIONS</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line">  <span class="flag-name">-t, --text</span>      <span class="flag-desc">&lt;string&gt;   Text to synthesize</span></div>
+    <div class="line">  <span class="flag-name">-f, --file</span>      <span class="flag-desc">&lt;path&gt;     Text file to synthesize</span></div>
+    <div class="line">  <span class="flag-name">-l, --lang</span>      <span class="flag-desc">&lt;code&gt;     Language code (default: en)</span></div>
+    <div class="line">  <span class="flag-name">-v, --voice</span>     <span class="flag-desc">&lt;name&gt;     Voice name (default: en-US-AriaNeural)</span></div>
+    <div class="line">  <span class="flag-name">-c, --clone</span>     <span class="flag-desc">&lt;dir&gt;      Use cloned voice profile</span></div>
+    <div class="line">  <span class="flag-name">-o, --output</span>    <span class="flag-desc">&lt;path&gt;     Output file path (default: output.wav)</span></div>
+    <div class="line">  <span class="flag-name">    --speed</span>      <span class="flag-desc">&lt;float&gt;    Speech speed 0.5–2.0 (default: 1.0)</span></div>
+    <div class="line">  <span class="flag-name">    --pitch</span>      <span class="flag-desc">&lt;float&gt;    Pitch shift -10 to +10 (default: 0)</span></div>
+    <div class="line">&nbsp;</div>
+
+    <!-- Clone options -->
+    <div class="line"><span class="section">CLONE OPTIONS</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line">  <span class="flag-name">-s, --source</span>    <span class="flag-desc">&lt;audio&gt;    Reference audio file (5–30s)</span></div>
+    <div class="line">  <span class="flag-name">-n, --name</span>      <span class="flag-desc">&lt;string&gt;   Name for the voice profile</span></div>
+    <div class="line">  <span class="flag-name">-o, --output</span>    <span class="flag-desc">&lt;dir&gt;      Output profile directory</span></div>
+    <div class="line">&nbsp;</div>
+
+    <!-- Global -->
+    <div class="line"><span class="section">GLOBAL OPTIONS</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line">  <span class="flag-name">-h, --help</span>      <span class="flag-desc">Show this help message</span></div>
+    <div class="line">  <span class="flag-name">-V, --version</span>   <span class="flag-desc">Print version information</span></div>
+    <div class="line">  <span class="flag-name">    --verbose</span>    <span class="flag-desc">Enable verbose logging</span></div>
+    <div class="line">  <span class="flag-name">    --quiet</span>      <span class="flag-desc">Suppress non-error output</span></div>
+    <div class="line">&nbsp;</div>
+
+    <!-- Examples -->
+    <div class="line"><span class="section">EXAMPLES</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line">  <span class="muted"># Basic text-to-speech</span></div>
+    <div class="line">  <span class="white">  omnivoice generate -t "Hello World" -l en -o hello.wav</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line">  <span class="muted"># Clone a voice and generate</span></div>
+    <div class="line">  <span class="white">  omnivoice clone -s ref.wav -n myvoice</span></div>
+    <div class="line">  <span class="white">  omnivoice generate -t "Hi there" -c ~/.ov-voices/myvoice</span></div>
+    <div class="line">&nbsp;</div>
+
+    <div class="line"><span class="prompt">~ $ </span><span class="cursor"></span></div>
+
+  </div>
+</div>
+</body>
+</html>

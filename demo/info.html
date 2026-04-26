@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OmniVoice Mobile — Info</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+    padding: 40px 20px;
+  }
+
+  .terminal-wrapper {
+    width: 750px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow:
+      0 25px 60px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      0 0 80px rgba(0, 200, 150, 0.05);
+  }
+
+  .title-bar {
+    background: linear-gradient(180deg, #2d2d3f 0%, #252536 100%);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.red    { background: #ff5f57; }
+  .dot.yellow { background: #febc2e; }
+  .dot.green  { background: #28c840; }
+
+  .title-bar-text {
+    flex: 1;
+    text-align: center;
+    color: #8a8a9a;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    margin-right: 52px;
+  }
+
+  .terminal-body {
+    background: #0d1117;
+    padding: 24px;
+    line-height: 1.7;
+    font-size: 13px;
+    color: #c9d1d9;
+  }
+
+  .prompt { color: #28c840; font-weight: 700; }
+  .command { color: #e6edf3; }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 16px;
+    background: #28c840;
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+  }
+
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .line { min-height: 1.7em; white-space: pre-wrap; }
+
+  .cyan { color: #56d4dd; }
+  .white { color: #f0f6fc; }
+  .muted { color: #6e7681; }
+  .green { color: #28c840; }
+  .dim-green { color: #1a7f37; }
+  .yellow { color: #d29922; }
+  .red { color: #f85149; }
+  .blue { color: #58a6ff; }
+  .bold { font-weight: 700; }
+  .dim { color: #484f58; }
+
+  .label { color: #8b949e; }
+  .value { color: #e6edf3; }
+  .val-cyan { color: #56d4dd; }
+  .val-green { color: #28c840; }
+  .val-yellow { color: #d29922; }
+  .val-red { color: #f85149; }
+  .val-blue { color: #58a6ff; }
+  .val-orange { color: #f0883e; }
+</style>
+</head>
+<body>
+<div class="terminal-wrapper">
+  <div class="title-bar">
+    <div class="dot red"></div>
+    <div class="dot yellow"></div>
+    <div class="dot green"></div>
+    <span class="title-bar-text">Termux — localhost</span>
+  </div>
+  <div class="terminal-body">
+
+    <div class="line"><span class="prompt">~ $ </span><span class="command">omnivoice --info</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line"><span class="cyan bold">═══════════════════════════════════════════════</span></div>
+    <div class="line">  <span class="cyan bold">OmniVoice Mobile — Device Info</span></div>
+    <div class="line"><span class="cyan bold">═══════════════════════════════════════════════</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line">  <span class="label">device</span><span class="dim">            </span><span class="val-blue">cpu</span></div>
+    <div class="line">  <span class="label">torch_available</span><span class="dim">   </span><span class="val-green">True</span></div>
+    <div class="line">  <span class="label">cuda_available</span><span class="dim">   </span><span class="val-red">False</span></div>
+    <div class="line">  <span class="label">total_ram_gb</span><span class="dim">     </span><span class="val-cyan">8.08 GB</span></div>
+    <div class="line">  <span class="label">free_ram_gb</span><span class="dim">      </span><span class="val-cyan">7.49 GB</span></div>
+    <div class="line">  <span class="label">arch</span><span class="dim">             </span><span class="value">x86_64</span></div>
+    <div class="line">  <span class="label">quantization</span><span class="dim">     </span><span class="val-orange">fp16</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line"><span class="cyan bold">═══════════════════════════════════════════════</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line"><span class="muted">  Model: sherpa-onnx-omnivoice v1.0.0</span></div>
+    <div class="line"><span class="muted">  Languages: 600+ (Edge TTS + Coqui TTS)</span></div>
+    <div class="line"><span class="muted">  Cloning:   Supported (5–30s reference)</span></div>
+    <div class="line">&nbsp;</div>
+    <div class="line"><span class="prompt">~ $ </span><span class="cursor"></span></div>
+
+  </div>
+</div>
+</body>
+</html>

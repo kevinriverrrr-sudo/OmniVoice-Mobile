@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OmniVoice Mobile — Generate</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+    padding: 40px 20px;
+  }
+
+  .terminal-wrapper {
+    width: 750px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow:
+      0 25px 60px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      0 0 80px rgba(0, 200, 150, 0.05);
+  }
+
+  .title-bar {
+    background: linear-gradient(180deg, #2d2d3f 0%, #252536 100%);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.red    { background: #ff5f57; }
+  .dot.yellow { background: #febc2e; }
+  .dot.green  { background: #28c840; }
+
+  .title-bar-text {
+    flex: 1;
+    text-align: center;
+    color: #8a8a9a;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    margin-right: 52px;
+  }
+
+  .terminal-body {
+    background: #0d1117;
+    padding: 24px;
+    line-height: 1.7;
+    font-size: 13px;
+    color: #c9d1d9;
+  }
+
+  .prompt { color: #28c840; font-weight: 700; }
+  .command { color: #e6edf3; }
+  .flag { color: #d2a8ff; }
+  .string { color: #a5d6ff; }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 16px;
+    background: #28c840;
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+  }
+
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .line { min-height: 1.7em; white-space: pre-wrap; }
+
+  .cyan   { color: #56d4dd; }
+  .white  { color: #f0f6fc; }
+  .muted  { color: #6e7681; }
+  .green  { color: #28c840; }
+  .yellow { color: #d29922; }
+  .blue   { color: #58a6ff; }
+  .bold   { font-weight: 700; }
+  .dim    { color: #484f58; }
+  .orange { color: #f0883e; }
+  .red    { color: #f85149; }
+
+  .progress-bar {
+    color: #28c840;
+    text-shadow: 0 0 6px rgba(40, 200, 64, 0.3);
+  }
+
+  .progress-track {
+    color: #21262d;
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 0px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .tag-info { background: rgba(88, 166, 255, 0.15); color: #58a6ff; }
+  .tag-ok   { background: rgba(40, 200, 64, 0.15); color: #28c840; }
+  .tag-warn { background: rgba(210, 153, 34, 0.15); color: #d29922; }
+
+  @keyframes spin {
+    0% { content: '⠋'; }
+    10% { content: '⠙'; }
+    20% { content: '⠹'; }
+    30% { content: '⠸'; }
+    40% { content: '⠼'; }
+    50% { content: '⠴'; }
+    60% { content: '⠦'; }
+    70% { content: '⠧'; }
+    80% { content: '⠇'; }
+    90% { content: '⠏'; }
+    100% { content: '⠋'; }
+  }
+
+  .spinner {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+  }
+</style>
+</head>
+<body>
+<div class="terminal-wrapper">
+  <div class="title-bar">
+    <div class="dot red"></div>
+    <div class="dot yellow"></div>
+    <div class="dot green"></div>
+    <span class="title-bar-text">Termux — localhost</span>
+  </div>
+  <div class="terminal-body">
+
+    <div class="line"><span class="prompt">~ $ </span><span class="command">omnivoice generate</span> <span class="flag">-t</span> <span class="string">"The quick brown fox jumps over the lazy dog. This is a demo of OmniVoice Mobile text-to-speech."</span> <span class="flag">-l</span> <span class="string">en</span> <span class="flag">-v</span> <span class="string">en-US-AriaNeural</span> <span class="flag">-o</span> <span class="string">demo.wav</span></div>
+    <div class="line">&nbsp;</div>
+
+    <!-- Banner -->
+    <div class="line"><span class="green">╔══════════════════════════════════════════════╗</span></div>
+    <div class="line"><span class="green">║       OmniVoice Mobile  v1.0.0              ║</span></div>
+    <div class="line"><span class="green">║   Edge TTS for Termux / Android ARM64      ║</span></div>
+    <div class="line"><span class="green">╚══════════════════════════════════════════════╝</span></div>
+    <div class="line">&nbsp;</div>
+
+    <div class="line"><span class="blue">[INFO]</span> <span class="white">Starting text-to-speech generation...</span></div>
+    <div class="line"><span class="blue">[INFO]</span> <span class="muted">Voice:      en-US-AriaNeural</span></div>
+    <div class="line"><span class="blue">[INFO]</span> <span class="muted">Language:   en</span></div>
+    <div class="line"><span class="blue">[INFO]</span> <span class="muted">Output:     demo.wav</span></div>
+    <div class="line"><span class="blue">[INFO]</span> <span class="muted">Speed:      1.0x | Pitch: 0</span></div>
+    <div class="line">&nbsp;</div>
+
+    <!-- Step 1 -->
+    <div class="line"><span class="blue">[1/4]</span> <span class="white">Loading model</span> <span class="dim">sherpa-onnx-omnivoice</span></div>
+    <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="progress-bar">████████████████████████████</span> <span class="muted">100%</span> <span class="dim">1.2s</span></div>
+    <div class="line">&nbsp;</div>
+
+    <!-- Step 2 -->
+    <div class="line"><span class="blue">[2/4]</span> <span class="white">Tokenizing input text</span></div>
+    <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="progress-bar">████████████████████████████</span> <span class="muted">100%</span> <span class="dim">0.04s</span> <span class="dim">| 22 tokens</span></div>
+    <div class="line">&nbsp;</div>
+
+    <!-- Step 3 -->
+    <div class="line"><span class="blue">[3/4]</span> <span class="white">Generating audio</span></div>
+    <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="progress-bar">████████████████████████████</span> <span class="muted">100%</span> <span class="dim">4.82s</span> <span class="dim">| RTF 0.62x</span></div>
+    <div class="line">&nbsp;</div>
+
+    <!-- Step 4 -->
+    <div class="line"><span class="blue">[4/4]</span> <span class="white">Encoding WAV (24kHz, 16-bit)</span></div>
+    <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="progress-bar">████████████████████████████</span> <span class="muted">100%</span> <span class="dim">0.03s</span></div>
+    <div class="line">&nbsp;</div>
+
+    <div class="line"><span class="green bold">  ✔  Speech generated successfully!</span></div>
+    <div class="line">&nbsp;</div>
+
+    <!-- Summary box -->
+    <div class="line"><span class="dim">  ┌──────────────────────────────────────────┐</span></div>
+    <div class="line"><span class="dim">  │</span> <span class="muted">Output</span>     <span class="white">demo.wav</span>                        <span class="dim">│</span></div>
+    <div class="line"><span class="dim">  │</span> <span class="muted">Duration</span>   <span class="cyan">4.82s</span>                           <span class="dim">│</span></div>
+    <div class="line"><span class="dim">  │</span> <span class="muted">Sample Rate</span> <span class="cyan">24000 Hz</span>                        <span class="dim">│</span></div>
+    <div class="line"><span class="dim">  │</span> <span class="muted">Channels</span>   <span class="cyan">1 (mono)</span>                        <span class="dim">│</span></div>
+    <div class="line"><span class="dim">  │</span> <span class="muted">RTF</span>        <span class="green">0.62x</span> <span class="dim">(faster than real-time)</span>    <span class="dim">│</span></div>
+    <div class="line"><span class="dim">  │</span> <span class="muted">File Size</span>  <span class="cyan">231 KB</span>                           <span class="dim">│</span></div>
+    <div class="line"><span class="dim">  └──────────────────────────────────────────┘</span></div>
+    <div class="line">&nbsp;</div>
+
+    <div class="line"><span class="dim">  Tip: Use -c to apply a cloned voice profile.</span></div>
+    <div class="line">&nbsp;</div>
+
+    <div class="line"><span class="prompt">~ $ </span><span class="cursor"></span></div>
+
+  </div>
+</div>
+</body>
+</html>

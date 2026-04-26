@@ -420,6 +420,51 @@ python scripts/quantize_model.py --model k2-fsa/OmniVoice --bits 8 -o ./q8
 
 ---
 
+## 🎬 Демо (скриншоты и видео)
+
+### Видео — полный процесс установки и генерации
+
+<div align="center">
+
+https://github.com/user-attachments/assets/omnivoice_demo.mp4
+
+> [Скачать video](./demo/omnivoice_demo.mp4) (300 KB, MP4)
+
+</div>
+
+### Скриншоты
+
+<table>
+<tr>
+<td width="50%">
+<img src="demo/screenshots/install.png" alt="Installation" />
+<p align="center"><b>Установка</b> (curl | bash)</p>
+</td>
+<td width="50%">
+<img src="demo/screenshots/info.png" alt="Device Info" />
+<p align="center"><b>Инфо об устройстве</b> (--info)</p>
+</td>
+</tr>
+<tr>
+<td width="50%">
+<img src="demo/screenshots/generate.png" alt="Generation" />
+<p align="center"><b>Генерация речи</b></p>
+</td>
+<td width="50%">
+<img src="demo/screenshots/clone.png" alt="Voice Cloning" />
+<p align="center"><b>Клонирование голоса</b></p>
+</td>
+</tr>
+<tr>
+<td width="50%">
+<img src="demo/screenshots/help.png" alt="Help" />
+<p align="center"><b>CLI справка</b> (--help)</p>
+</td>
+</tr>
+</table>
+
+---
+
 ## 📂 Структура проекта
 
 ```
